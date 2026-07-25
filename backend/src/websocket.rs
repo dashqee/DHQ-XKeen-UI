@@ -119,9 +119,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                 .unwrap();
 
                 let error_log = error_log_path();
-                let access_log = access_log_path();
                 let _ = watcher.watch(Path::new(&error_log), RecursiveMode::NonRecursive);
-                let _ = watcher.watch(Path::new(&access_log), RecursiveMode::NonRecursive);
 
                 while let Some(path) = mpsc_rx.recv().await {
                     let _ = tx.send(path);
@@ -134,7 +132,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let (mut tx, mut rx) = socket.split();
     let mut log_rx = state.log_tx.subscribe();
-    let mut path = error_log_path();
+    let path = error_log_path();
     let mut query = String::new();
     let tz = state.settings.read().unwrap().log.timezone;
 
@@ -161,17 +159,6 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                         let v: serde_json::Value = serde_json::from_str(&txt).unwrap_or_default();
                         let tz = state.settings.read().unwrap().log.timezone;
                         match v["type"].as_str() {
-                            Some("switchFile") => {
-                                path = if v["file"] == "access.log" { access_log_path() } else { error_log_path() };
-
-                                let p = path.clone();
-                                let q = query.clone();
-                                let (t, l, off) = tokio::task::spawn_blocking(move || read_log_file(p, 0, q, true, tz)).await.unwrap();
-                                offset = off;
-
-                                let msg = if l.is_empty() { serde_json::json!({"type": "clear"}) } else { serde_json::json!({"type": t, "lines": l}) };
-                                if tx.send(Message::Text(msg.to_string().into())).await.is_err() { break; }
-                            },
                             Some("filter") | Some("reload") => {
                                 query = v["query"].as_str().unwrap_or("").to_string();
                                 let q = query.clone();

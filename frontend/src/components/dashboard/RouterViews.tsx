@@ -46,14 +46,35 @@ function selectedRoute(proxies: Record<string, any>) {
   }
 }
 
+type ClashMode = 'rule' | 'global' | 'direct'
+
+const ROUTING_MODES: Array<{ value: ClashMode; label: string }> = [
+  { value: 'rule', label: 'Правила' },
+  { value: 'global', label: 'Глобальный' },
+  { value: 'direct', label: 'Напрямую' },
+]
+
 export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }) {
   const { state, dispatch, showToast } = useAppContext({ includeConfigs: true })
   const connections = useConnections()
   const proxies = useProxiesStore((s) => s.proxies)
   const [busy, setBusy] = useState(false)
+  const [mode, setMode] = useState<ClashMode>('rule')
+  const [modeBusy, setModeBusy] = useState(false)
   const isRunning = state.serviceStatus === 'running'
   const isPending = state.serviceStatus === 'pending' || state.serviceStatus === 'loading'
+  const isApiReady = isRunning && !!(state.clashApiPort || state.clashApiUnix)
   const route = useMemo(() => selectedRoute(proxies), [proxies])
+
+  useEffect(() => {
+    if (!isApiReady) return
+    clashFetch<{ mode?: ClashMode }>(state.clashApiPort ?? '', 'configs', {
+      secret: state.clashApiSecret,
+      unix: state.clashApiUnix,
+    })
+      .then((data) => data.mode && setMode(data.mode))
+      .catch(() => showToast('Не удалось получить режим маршрутизации', 'error'))
+  }, [isApiReady, showToast, state.clashApiPort, state.clashApiSecret, state.clashApiUnix])
 
   const totals = useMemo(
     () =>
@@ -85,6 +106,32 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
       showToast(error instanceof Error ? error.message : 'Не удалось связаться с роутером', 'error')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const changeMode = async (newMode: ClashMode) => {
+    if (!isApiReady || modeBusy || newMode === mode) return
+    const previousMode = mode
+    setMode(newMode)
+    setModeBusy(true)
+    try {
+      await clashFetch(state.clashApiPort ?? '', 'configs', {
+        method: 'PATCH',
+        secret: state.clashApiSecret,
+        unix: state.clashApiUnix,
+        body: { mode: newMode },
+      })
+      await clashFetch(state.clashApiPort ?? '', 'connections', {
+        method: 'DELETE',
+        secret: state.clashApiSecret,
+        unix: state.clashApiUnix,
+      })
+      showToast(`Режим: ${ROUTING_MODES.find((item) => item.value === newMode)?.label}`)
+    } catch (error) {
+      setMode(previousMode)
+      showToast(error instanceof Error ? error.message : 'Не удалось изменить режим маршрутизации', 'error')
+    } finally {
+      setModeBusy(false)
     }
   }
 
@@ -134,6 +181,27 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
           <span className={cn('dhq-delay', !route.delay && 'dhq-delay--unknown')}>
             {route.delay ? `${route.delay} мс` : 'проверяется'}
           </span>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/3 p-1">
+          <div className="grid grid-cols-3 gap-1" role="group" aria-label="Режим маршрутизации">
+            {ROUTING_MODES.map((item) => (
+              <Button
+                key={item.value}
+                type="button"
+                size="sm"
+                variant={mode === item.value ? 'default' : 'ghost'}
+                className={cn(
+                  'min-w-0 px-2 text-xs sm:text-sm',
+                  mode === item.value && 'bg-[linear-gradient(110deg,var(--dhq-violet),var(--dhq-blue))] text-white'
+                )}
+                disabled={!isApiReady || modeBusy}
+                aria-pressed={mode === item.value}
+                onClick={() => void changeMode(item.value)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
         </div>
         <div className="dhq-route-line">
           <span><IconRouter /> Роутер</span>
@@ -218,7 +286,7 @@ export function DevicesView() {
   )
 }
 
-export function DiagnosticsView() {
+export function DiagnosticsView({ onOpenUpdate }: { onOpenUpdate: (target: 'self' | 'mihomo') => void }) {
   const { state } = useAppContext()
   const wsConnected = useWsConnected()
   const checks = [
@@ -237,6 +305,44 @@ export function DiagnosticsView() {
             <div><strong>{check.name}</strong><small>{check.detail}</small></div>
           </article>
         ))}
+      </section>
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className="dhq-route-card min-h-0! gap-4">
+          <div className="dhq-card-heading">
+            <div>
+              <span className="dhq-eyebrow">Панель управления</span>
+              <h2>DHQClash Router</h2>
+            </div>
+            <span className={cn('dhq-delay', state.isOutdatedUI && 'border-amber-400/30 text-amber-300')}>
+              {state.version || '—'}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {state.isOutdatedUI ? 'Доступна новая версия интерфейса.' : 'Установлена актуальная проверенная версия.'}
+          </p>
+          <Button variant="outline" className="mt-auto" onClick={() => onOpenUpdate('self')}>
+            <IconRefresh data-icon="inline-start" />
+            Проверить обновления
+          </Button>
+        </article>
+        <article className="dhq-route-card min-h-0! gap-4">
+          <div className="dhq-card-heading">
+            <div>
+              <span className="dhq-eyebrow">Ядро маршрутизации</span>
+              <h2>Mihomo</h2>
+            </div>
+            <span className={cn('dhq-delay', state.isOutdatedCore && 'border-amber-400/30 text-amber-300')}>
+              {state.coreVersions.mihomo || (state.availableCores.includes('mihomo') ? 'установлено' : 'не установлено')}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {state.isOutdatedCore ? 'Доступна новая версия ядра.' : 'Единственное поддерживаемое ядро DHQClash Router.'}
+          </p>
+          <Button variant="outline" className="mt-auto" onClick={() => onOpenUpdate('mihomo')}>
+            <IconRefresh data-icon="inline-start" />
+            {state.availableCores.includes('mihomo') ? 'Обновить Mihomo' : 'Установить Mihomo'}
+          </Button>
+        </article>
       </section>
       <section className="dhq-diagnostic-log">
         <div className="dhq-card-heading">

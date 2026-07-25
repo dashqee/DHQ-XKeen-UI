@@ -236,7 +236,7 @@ export default function ExternalApp() {
 
   const onConnected = useCallback((secret: string, version: string) => {
     setConnection({ secret, version })
-    dispatch({ type: 'SET_CORE_INFO', currentCore: 'mihomo', coreVersions: { mihomo: version, xray: '' }, availableCores: ['mihomo'] })
+    dispatch({ type: 'SET_CORE_INFO', currentCore: 'mihomo', coreVersions: { mihomo: version }, availableCores: ['mihomo'] })
     dispatch({ type: 'SET_SERVICE_STATUS', status: 'running' })
     dispatch({ type: 'SET_DASHBOARD_PORT', port: 'external', secret })
     void fetchClashProxies('external', secret)

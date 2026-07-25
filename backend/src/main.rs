@@ -4,7 +4,6 @@ mod backuper;
 mod configs;
 mod controller;
 mod frontend_embedder;
-mod geo;
 mod logger;
 mod ruleset_inspector;
 mod settings;
@@ -26,7 +25,7 @@ use std::io::{self, Write};
 use std::net::SocketAddr;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::process::{exit};
+use std::process::exit;
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 
@@ -118,7 +117,12 @@ fn setup_process_logging() {
 
     if !stdio_is_interactive() {
         if let Err(e) = redirect_stderr_to_process_log() {
-            eprintln!("{} {}: {}", " Не удалось перенаправить stderr в".red().bold(), XKEEN_UI_LOG, e);
+            eprintln!(
+                "{} {}: {}",
+                " Не удалось перенаправить stderr в".red().bold(),
+                XKEEN_UI_LOG,
+                e
+            );
         }
     }
 }
@@ -250,7 +254,10 @@ async fn main() {
             router_req = router_req.header("X-Ndma-Tkn", token);
         }
 
-        let router_info = router_req.send().ok().and_then(|resp| resp.json::<serde_json::Value>().ok());
+        let router_info = router_req
+            .send()
+            .ok()
+            .and_then(|resp| resp.json::<serde_json::Value>().ok());
 
         let device = router_info
             .as_ref()
@@ -270,8 +277,7 @@ async fn main() {
     }
 
     let version: &'static str = Box::leak(format!("{} ({})", VERSION, get_arch()).into_boxed_str());
-    let mut command = <Cli as clap::CommandFactory>::command()
-        .version(version);
+    let mut command = <Cli as clap::CommandFactory>::command().version(version);
 
     if std::env::args().any(|arg| arg == "-h" || arg == "--help") {
         command.print_help().unwrap();
@@ -369,23 +375,14 @@ async fn main() {
     setup_process_logging();
     println!("DHQClash Router {} ({})", VERSION, get_arch());
 
-    refresh_xray_log_paths();
     let error_log = error_log_path();
-    let access_log = access_log_path();
 
-    for path in [&error_log, &access_log] {
-        if let Some(p) = Path::new(path).parent() {
-            let _ = std::fs::create_dir_all(p);
-        }
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(path);
+    if let Some(p) = Path::new(&error_log).parent() {
+        let _ = std::fs::create_dir_all(p);
     }
+    let _ = std::fs::OpenOptions::new().create(true).append(true).open(&error_log);
 
-    println!(
-        "{} [INFO] Defined xray logs: access={}, error={}",
-        ts(),
-        access_log,
-        error_log
-    );
+    println!("{} [INFO] Defined Mihomo log: {}", ts(), error_log);
 
     let init_file = tokio::task::spawn_blocking(|| controller::find_init_file(true))
         .await
@@ -394,12 +391,6 @@ async fn main() {
             log("ERROR", "Не удалось найти файл инициализации XKeen".into());
             None
         });
-
-    let geo_cache = Arc::new(RwLock::new(std::collections::HashMap::new()));
-    let gc_clone = geo_cache.clone();
-    tokio::task::spawn_blocking(move || {
-        let _ = crate::geo::list_geo_files(gc_clone);
-    });
 
     let (log_tx, _) = broadcast::channel::<String>(16);
     let log_tx_arc = Arc::new(log_tx);
@@ -411,7 +402,7 @@ async fn main() {
         .and_then(|json| json.get("xkeen")?.get("rci_token")?.as_str().map(String::from));
 
     let state = AppState {
-        core: Arc::new(RwLock::new(detect_core(init_file.as_deref()))),
+        core: Arc::new(RwLock::new(detect_core())),
         settings: Arc::new(RwLock::new(load_settings())),
         init_file: Arc::new(RwLock::new(init_file)),
         http_client: reqwest::Client::builder()
@@ -421,7 +412,6 @@ async fn main() {
             .build()
             .unwrap(),
         update_checker: UpdateChecker::default(),
-        geo_cache,
         log_tx: log_tx_arc,
         log_watcher: Arc::new(tokio::sync::Mutex::new(None)),
         app_config_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -441,7 +431,10 @@ async fn main() {
             .await
         {
             Ok(resp) if resp.status() == StatusCode::FORBIDDEN => {
-                log("ERROR", "Ошибка доступа к RCI. Некоторый функционал может быть недоступен.".into());
+                log(
+                    "ERROR",
+                    "Ошибка доступа к RCI. Некоторый функционал может быть недоступен.".into(),
+                );
             }
             _ => {}
         }
@@ -476,9 +469,6 @@ async fn main() {
         .route("/api/ruleset", get(ruleset_inspector::get_ruleset_content))
         .route("/api/device-list", get(api_relay::get_device_list))
         .route("/api/update", post(updater::post_update))
-        .route("/api/geo", get(geo::get_geo))
-        .route("/api/geo/site", get(geo::get_geosite))
-        .route("/api/geo/ip", get(geo::get_geoip))
         .route("/api/auth/logout", post(auth::post_logout))
         .route("/api/auth/reset", post(auth::post_auth_reset))
         .route("/clash/{*path}", any(api_relay::proxy_http))
@@ -523,23 +513,8 @@ fn get_arch() -> String {
     format!("{}/{}", arch, libc)
 }
 
-fn detect_core(init_file: Option<&str>) -> CoreInfo {
-    let content = init_file
-        .and_then(|p| std::fs::read_to_string(p).ok())
-        .unwrap_or_default();
-    if content.contains("name_client=\"mihomo\"") {
-        CoreInfo {
-            name: "mihomo".into(),
-            conf_dir: MIHOMO_CONF_DIR.into(),
-            is_json: false,
-        }
-    } else {
-        CoreInfo {
-            name: "xray".into(),
-            conf_dir: XRAY_CONF_DIR.into(),
-            is_json: true,
-        }
-    }
+fn detect_core() -> CoreInfo {
+    CoreInfo { name: "mihomo".into() }
 }
 
 fn load_settings() -> AppSettings {

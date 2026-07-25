@@ -1,6 +1,6 @@
 # XKeen UI
 
-Ультра-лёгкая и быстрая панель управления для [XKeen](https://github.com/jameszeroX/XKeen) — обёртки Xray-core / Mihomo (Clash Meta) для роутеров Keenetic. Один самодостаточный бинарь, минимум зависимостей, LAN-доступ через браузер.
+Ультра-лёгкая и быстрая панель управления Mihomo (Clash Meta) для роутеров Keenetic. Один самодостаточный бинарь, минимум зависимостей, LAN-доступ через браузер.
 
 ![preview](https://github.com/zxc-rv/XKeen-UI/blob/main/preview.gif?raw=true)
 
@@ -42,9 +42,8 @@ curl https://raw.githubusercontent.com/zxc-rv/XKeen-UI/main/setup.sh | sh -s -- 
 - Мониторинг и управление сервисом XKeen (start / stop / restart / status)
 - Редактор конфигов с подсветкой, валидацией и форматированием (CodeMirror 6)
 - Просмотр логов в реальном времени: авто-обновление, фильтрация, выбор таймзоны
-- Переключение, установка и обновление ядер Xray и Mihomo (Clash Meta)
-- Генератор outbound из подписочных ссылок (доступен также автономно: [Outbound Generator](https://zxc-rv.github.io/XKeen-UI/Outbound_Generator/))
-- Сканер DAT-файлов (geoip / geosite) — ruleset inspector
+- Установка и обновление ядра Mihomo (Clash Meta)
+- Импорт прокси и подписок в конфигурацию Mihomo
 - Полная реализация Clash API для Mihomo (HTTP + WebSocket, через TCP и Unix-сокет)
 - Резервное копирование и восстановление конфигов
 
@@ -85,6 +84,5 @@ curl https://raw.githubusercontent.com/zxc-rv/XKeen-UI/main/setup.sh | sh -s -- 
 
 - [Руководство](Guide) — пошаговая настройка _(в разработке)_
 - [FAQ](FAQ) — Часто задаваемые вопросы
-- [Outbound Generator (web)](https://zxc-rv.github.io/XKeen-UI/Outbound_Generator/)
 - [Релизы](https://github.com/zxc-rv/XKeen-UI/releases)
 - [Issues](https://github.com/zxc-rv/XKeen-UI/issues)

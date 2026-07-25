@@ -12,7 +12,6 @@ colored = "3"
 flate2 = "1.1"
 futures-util = "0.3"
 http = "1.4.0"
-memmap2 = "0.9"
 md5 = "0.8"
 mime_guess = "2"
 nix = { version = "0.31", default-features = false, features = [
@@ -23,7 +22,6 @@ nix = { version = "0.31", default-features = false, features = [
   "fs",
 ] }
 notify = "8"
-prost = "0.14"
 regex-lite = "0.1.9"
 reqwest = { version = "0.12", default-features = false, features = [
   "json",
@@ -50,7 +48,6 @@ tower-http = { version = "0.7", features = ["fs", "cors", "set-header"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["v4"] }
 yaml-rust2 = { version = "0.11", default-features = false }
-zip = { version = "8", default-features = false, features = ["deflate"] }
 
 [profile.release]
 opt-level = 3

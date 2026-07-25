@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 static ANSI_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\x1b\[\d+m").unwrap());
 static LVL_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)\[(debug|info|warn|warning|error|fatal)\]").unwrap());
-static XRAY_TIME_RE: LazyLock<Regex> =
+static STRUCTURED_TIME_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"time="([^"]+)" level=(\w+) msg="?(.*?)""#).unwrap());
 
 pub const TS_FMT: &str = "%Y/%m/%d %H:%M:%S.%6f";
@@ -44,7 +44,7 @@ pub fn process_log_line(line: String, tz: i32) -> String {
     let offset = Duration::hours(tz as i64);
 
     if out.contains("time=") {
-        if let Some(caps) = XRAY_TIME_RE.captures(&out) {
+        if let Some(caps) = STRUCTURED_TIME_RE.captures(&out) {
             let ts = DateTime::parse_from_rfc3339(&caps[1])
                 .map(|t| t + offset)
                 .map(|t| t.format("%Y/%m/%d %H:%M:%S%.6f").to_string())

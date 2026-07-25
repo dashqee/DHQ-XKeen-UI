@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { IconChevronDown, IconFile, IconFilter, IconMaximize, IconMinimize, IconTrash, IconX } from '@tabler/icons-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -11,13 +10,11 @@ import type { WsMessage } from '../../lib/websocket'
 import { useWebSocket } from '../../lib/websocket'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '../ui/input-group'
 
-const LOG_FILES = ['error.log', 'access.log']
 const MAX_LINES = 1000
 
 export function LogPanel() {
   const timezone = useSettings((s) => s.timezone)
   const [filter, setFilter] = useState('')
-  const [currentFile, setCurrentFile] = useState('error.log')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -117,13 +114,6 @@ export function LogPanel() {
     ws.reload(filter)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timezone])
-
-  function switchFile(filename: string) {
-    if (filename === currentFile) return
-    setCurrentFile(filename)
-    renderAll([])
-    ws.switchFile(filename)
-  }
 
   function handleFilterChange(value: string) {
     setFilter(value)
@@ -333,21 +323,7 @@ export function LogPanel() {
                   </InputGroupAddon>
                 </InputGroup>
               </div>
-              <Select value={currentFile} onValueChange={switchFile}>
-                <SelectTrigger popper className="md:w-33">
-                  <SelectValue />
-                </SelectTrigger>
-
-                <SelectContent position="popper">
-                  <SelectGroup>
-                    {LOG_FILES.map((f) => (
-                      <SelectItem key={f} value={f} className="text-sm">
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <span className="text-muted-foreground hidden font-mono text-xs md:inline">mihomo.log</span>
               <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
                 <Tooltip>
                   <TooltipTrigger render={<Button variant="outline" size="icon" className="hover:text-destructive" onClick={() => ws.clearLog()}><IconTrash /></Button>} />

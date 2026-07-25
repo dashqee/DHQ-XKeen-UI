@@ -10,22 +10,17 @@ use tokio::time::timeout;
 const GITHUB_RELEASE: &str = "https://github.com";
 
 pub async fn get_local_core_version(core: &str) -> Option<String> {
-    let arg = if core == "mihomo" { "-v" } else { "version" };
+    if core != "mihomo" {
+        return None;
+    }
     let mut cmd = Command::new(format!("/opt/sbin/{}", core));
-    cmd.arg(arg);
-    let out = timeout(Duration::from_secs(5), cmd.output())
-        .await
-        .ok()?
-        .ok()?;
+    cmd.arg("-v");
+    let out = timeout(Duration::from_secs(5), cmd.output()).await.ok()?.ok()?;
 
     let s = String::from_utf8_lossy(&out.stdout);
     let p: Vec<&str> = s.split_whitespace().collect();
 
-    let ver = match core {
-        "xray" => p.get(1).copied(),
-        "mihomo" => p.get(if p.first() == Some(&"mihomo") { 1 } else { 2 }).copied(),
-        _ => None,
-    }?;
+    let ver = p.get(if p.first() == Some(&"mihomo") { 1 } else { 2 }).copied()?;
 
     Some(if ver.starts_with('v') || ver.starts_with("alpha") {
         ver.to_string()
@@ -52,9 +47,7 @@ pub async fn version_handler(State(state): State<AppState>) -> impl IntoResponse
         *state.update_checker.core_outdated.read().unwrap(),
     );
 
-    let current_core = state.core.read().unwrap().name.clone();
-
-    let (xray_version, mihomo_version) = tokio::join!(get_local_core_version("xray"), get_local_core_version("mihomo"));
+    let mihomo_version = get_local_core_version("mihomo").await;
 
     let mut res = serde_json::Map::new();
 
@@ -67,12 +60,15 @@ pub async fn version_handler(State(state): State<AppState>) -> impl IntoResponse
 
     {
         let link = get_repo("self").and_then(|r| make_link(r, ui_tag.as_deref()));
-        res.insert("xkeen-ui".into(), json!({
-            "version": VERSION.trim_start_matches('v'),
-            "outdated": ui,
-            "show_toast": check(ui, &state.update_checker.last_ui_toast),
-            "link": link,
-        }));
+        res.insert(
+            "xkeen-ui".into(),
+            json!({
+                "version": VERSION.trim_start_matches('v'),
+                "outdated": ui,
+                "show_toast": check(ui, &state.update_checker.last_ui_toast),
+                "link": link,
+            }),
+        );
     }
 
     let make_core_obj = |v: String, repo: &str, tag: Option<&str>| -> serde_json::Value {
@@ -83,23 +79,9 @@ pub async fn version_handler(State(state): State<AppState>) -> impl IntoResponse
         obj
     };
 
-    if current_core == "mihomo" {
-        if let Some(v) = mihomo_version {
-            if let Some(repo) = get_repo("mihomo") {
-                res.insert("mihomo".into(), make_core_obj(v, repo, core_tag.as_deref()));
-            }
-        }
-        if let Some(v) = xray_version {
-            res.insert("xray".into(), json!({ "version": v }));
-        }
-    } else {
-        if let Some(v) = xray_version {
-            if let Some(repo) = get_repo("xray") {
-                res.insert("xray".into(), make_core_obj(v, repo, core_tag.as_deref()));
-            }
-        }
-        if let Some(v) = mihomo_version {
-            res.insert("mihomo".into(), json!({ "version": v }));
+    if let Some(v) = mihomo_version {
+        if let Some(repo) = get_repo("mihomo") {
+            res.insert("mihomo".into(), make_core_obj(v, repo, core_tag.as_deref()));
         }
     }
 
@@ -141,7 +123,8 @@ pub fn start_update_checker(state: AppState) {
                 let core = state.core.read().unwrap().name.clone();
                 let cur_opt = get_local_core_version(&core).await;
                 let cur_str = cur_opt.as_deref().map(|v| v.trim_start_matches('v'));
-                if let Some((latest, tag)) = updater::fetch_latest_version(&state.http_client, &core, &proxies, cur_str).await
+                if let Some((latest, tag)) =
+                    updater::fetch_latest_version(&state.http_client, &core, &proxies, cur_str).await
                 {
                     if let Some(cur) = cur_str {
                         if !cur.is_empty() {

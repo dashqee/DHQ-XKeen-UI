@@ -19,9 +19,6 @@ import { clashWsUrl } from './websocket'
 
 const initialSettings: AppSettings = {
   theme: getStoredTheme(),
-  autoApply: false,
-  guiRouting: false,
-  guiLog: false,
   autoCheckUI: true,
   autoCheckCore: true,
   backupCore: true,
@@ -40,7 +37,7 @@ const initialState: AppState = {
   serviceStatus: 'loading',
   pendingText: '',
   currentCore: '',
-  coreVersions: { xray: '', mihomo: '' },
+  coreVersions: { mihomo: '' },
   availableCores: [],
   configs: [],
   isConfigsLoading: true,
@@ -54,13 +51,10 @@ const initialState: AppState = {
   connections: [],
   wsConnected: false,
   showDirtyModal: false,
-  showCoreManageModal: false,
   showUpdateModal: false,
   showImportModal: false,
   showTemplateModal: false,
   showSettingsModal: false,
-  showCommentsWarningModal: false,
-  showGeoScanModal: false,
   showBackupsModal: false,
   updateModalCore: '',
   toasts: [],
@@ -143,13 +137,10 @@ type ShowToastFn = (message: string | { title: string; body: string; persistent?
 type CoreState = Omit<
   AppState,
   | 'showDirtyModal'
-  | 'showCoreManageModal'
   | 'showUpdateModal'
   | 'showImportModal'
   | 'showTemplateModal'
   | 'showSettingsModal'
-  | 'showCommentsWarningModal'
-  | 'showGeoScanModal'
   | 'showBackupsModal'
   | 'updateModalCore'
   | 'pendingSaveAction'
@@ -163,13 +154,10 @@ type CoreState = Omit<
 type ModalState = Pick<
   AppState,
   | 'showDirtyModal'
-  | 'showCoreManageModal'
   | 'showUpdateModal'
   | 'showImportModal'
   | 'showTemplateModal'
   | 'showSettingsModal'
-  | 'showCommentsWarningModal'
-  | 'showGeoScanModal'
   | 'showBackupsModal'
   | 'updateModalCore'
   | 'pendingSaveAction'
@@ -260,13 +248,10 @@ export function useModalContext() {
     useShallow(
       (s): ModalState => ({
         showDirtyModal: s.showDirtyModal,
-        showCoreManageModal: s.showCoreManageModal,
         showUpdateModal: s.showUpdateModal,
         showImportModal: s.showImportModal,
         showTemplateModal: s.showTemplateModal,
         showSettingsModal: s.showSettingsModal,
-        showCommentsWarningModal: s.showCommentsWarningModal,
-        showGeoScanModal: s.showGeoScanModal,
         showBackupsModal: s.showBackupsModal,
         updateModalCore: s.updateModalCore,
         pendingSaveAction: s.pendingSaveAction,

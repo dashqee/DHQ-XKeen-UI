@@ -39,11 +39,12 @@ jobs:
             toolchain: stable
           - target: mipsel-unknown-linux-musl
             name: mips32le
-            toolchain: nightly
+            # Pinned: nightly 2026-07-24 ICEs while compiling Tokio with LTO for MIPS.
+            toolchain: nightly-2026-07-21
             rustflags: "-C target-feature=+crt-static -L /usr/local/mipsel-linux-muslsf/lib -L /usr/local/lib/gcc/mipsel-linux-muslsf/9.2.0"
           - target: mips-unknown-linux-musl
             name: mips32
-            toolchain: nightly
+            toolchain: nightly-2026-07-21
             rustflags: "-C target-feature=+crt-static -L /usr/local/mips-linux-muslsf/lib -L /usr/local/lib/gcc/mips-linux-muslsf/9.2.0"
           # - target: mipsel-unknown-linux-gnu
           #   name: mips32le-gnu

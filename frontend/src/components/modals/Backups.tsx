@@ -25,7 +25,7 @@ import { useAppContext } from '@/lib/store'
 import { IconAlertTriangle, IconBox, IconBoxOff, IconChevronDown, IconPencil, IconPlus, IconRestore, IconTrash } from '@tabler/icons-react'
 import { useCallback, useEffect, useState } from 'react'
 
-type BackupContent = 'xkeen' | 'xkeen-ui' | 'xray' | 'mihomo'
+type BackupContent = 'xkeen' | 'xkeen-ui' | 'mihomo'
 
 interface BackupItem {
   name: string
@@ -62,14 +62,12 @@ type ConfirmAction = { type: 'restore'; name: string; contents?: BackupContent[]
 const CONTENT_LABELS: Record<BackupContent, string> = {
   xkeen: 'XKeen',
   'xkeen-ui': 'DHQClash Router',
-  xray: 'Xray',
   mihomo: 'Mihomo',
 }
 
 const CONTENT_VARIANTS: Record<BackupContent, 'sky' | 'emerald' | 'amber' | 'rose'> = {
   xkeen: 'sky',
   'xkeen-ui': 'rose',
-  xray: 'emerald',
   mihomo: 'amber',
 }
 
@@ -80,7 +78,7 @@ function stripBackupSuffix(name: string) {
   return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name
 }
 
-const CONTENT_ORDER: BackupContent[] = ['xkeen', 'xkeen-ui', 'xray', 'mihomo']
+const CONTENT_ORDER: BackupContent[] = ['xkeen', 'xkeen-ui', 'mihomo']
 const MAX_BACKUPS_TO_KEEP = 5
 const KEEP_LATEST_BACKUPS_KEY = 'backups:keepLatest'
 
@@ -268,7 +266,7 @@ export function BackupsModal({ open, onOpenChange, onRefreshConfigs }: Props) {
               <IconBox size={27} className="text-chart-2" /> Бэкапы конфигураций
             </DialogTitle>
             <DialogDescription>
-              Сохранение конфигураций DHQClash Router, XKeen, Xray и Mihomo. Восстановление перезапишет текущие конфигурации.
+              Сохранение конфигураций DHQClash Router, XKeen и Mihomo. Восстановление перезапишет текущие конфигурации.
             </DialogDescription>
           </DialogHeader>
 
