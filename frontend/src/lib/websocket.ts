@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
+import { IS_EXTERNAL_UI } from './api'
 
 export function clashWsUrl(port: string, path: string, secret?: string | null, unix?: string | null) {
   const normalizedPath = path.replace(/^\/+/, '')
@@ -9,6 +10,12 @@ export function clashWsUrl(port: string, path: string, secret?: string | null, u
   if (useUnix && unix) params.set('unix', unix)
   const qs = params.toString()
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
+  if (IS_EXTERNAL_UI) {
+    const directParams = new URLSearchParams()
+    if (secret) directParams.set('token', secret)
+    const directQs = directParams.toString()
+    return `${protocol}://${location.host}/${normalizedPath}${directQs ? `?${directQs}` : ''}`
+  }
   return `${protocol}://${location.host}/clash-ws/${normalizedPath}${qs ? `?${qs}` : ''}`
 }
 

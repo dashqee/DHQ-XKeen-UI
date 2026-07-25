@@ -61,7 +61,7 @@ type ConfirmAction = { type: 'restore'; name: string; contents?: BackupContent[]
 
 const CONTENT_LABELS: Record<BackupContent, string> = {
   xkeen: 'XKeen',
-  'xkeen-ui': 'XKeen UI',
+  'xkeen-ui': 'DHQClash Router',
   xray: 'Xray',
   mihomo: 'Mihomo',
 }
@@ -268,7 +268,7 @@ export function BackupsModal({ open, onOpenChange, onRefreshConfigs }: Props) {
               <IconBox size={27} className="text-chart-2" /> Бэкапы конфигураций
             </DialogTitle>
             <DialogDescription>
-              Сохранение конфигураций XKeen, XKeen-UI, Xray и Mihomo. Восстановление перезапишет текущие конфигурации.
+              Сохранение конфигураций DHQClash Router, XKeen, Xray и Mihomo. Восстановление перезапишет текущие конфигурации.
             </DialogDescription>
           </DialogHeader>
 

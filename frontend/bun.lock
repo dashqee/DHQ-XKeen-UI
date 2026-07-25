@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "xkeen-ui",
+      "name": "dhqclash-router-ui",
       "dependencies": {
         "@base-ui/react": "^1.6.0",
         "@codemirror/autocomplete": "^6.20.3",

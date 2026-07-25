@@ -1,0 +1,12 @@
+# DHQClash external-ui — merge this fragment into the client Mihomo profile.
+# Generate a unique secret per router. Do not ship the placeholder below.
+external-controller: 0.0.0.0:9090
+secret: "<GENERATE_UNIQUE_SECRET>"
+
+external-ui: /opt/etc/mihomo/ui
+external-ui-name: dhqclash
+external-ui-url: "https://github.com/dashqee/DHQ-XKeen-UI/releases/latest/download/dhqclash-external-ui.zip"
+
+profile:
+  store-selected: true
+  store-fake-ip: true

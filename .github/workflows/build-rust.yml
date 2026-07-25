@@ -14,11 +14,19 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Build frontend
         working-directory: frontend
-        run: bun install && bun run build
+        run: |
+          bun install
+          bun run build:all
+          cd dist-external
+          zip -r ../../dhqclash-external-ui.zip .
       - uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: frontend/dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dhqclash-external-ui
+          path: dhqclash-external-ui.zip
 
   build:
     needs: frontend
@@ -99,12 +107,12 @@ jobs:
           RUSTFLAGS: ${{ matrix.rustflags }}
         run: |
           cross +${{ matrix.toolchain }} build --release --target ${{ matrix.target }}
-          cp target/${{ matrix.target }}/release/xkeen-ui ../xkeen-ui-${{ matrix.name }}
+          cp target/${{ matrix.target }}/release/xkeen-ui ../dhqclash-router-${{ matrix.name }}
 
       - uses: actions/upload-artifact@v7
         with:
-          name: xkeen-ui-${{ matrix.name }}
-          path: xkeen-ui-${{ matrix.name }}
+          name: dhqclash-router-${{ matrix.name }}
+          path: dhqclash-router-${{ matrix.name }}
 
   release:
     runs-on: ubuntu-latest
@@ -122,4 +130,6 @@ jobs:
         with:
           tag_name: ${{ inputs.version }}
           prerelease: true
-          files: artifacts/xkeen-ui-*/*
+          files: |
+            artifacts/dhqclash-router-*/*
+            artifacts/dhqclash-external-ui/*

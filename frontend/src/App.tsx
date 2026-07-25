@@ -3,12 +3,23 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { LoginForm } from './components/auth/Login'
 import type { CodeMirrorRef } from './components/configuration/CodeMirror'
 import { ConfigPanel } from './components/configuration/ConfigPanel'
+import { DevicesView, DiagnosticsView, RouterDashboard, RoutingView } from './components/dashboard/RouterViews'
+import { RouterShell, type ShellNavigationItem } from './components/layout/RouterShell'
 import { LogPanel } from './components/log/LogPanel'
 import { StatusBar } from './components/status/StatusBar'
 import { Toast } from './components/ui/toast'
 import { apiCall, capitalize } from './lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from './lib/loader'
-import { fetchClashProxies, getAppState, syncClashApiPort, useAppActions, useModalContext, useSettings } from './lib/store'
+import {
+  fetchClashProxies,
+  getAppState,
+  syncClashApiPort,
+  useAppActions,
+  useAppContext,
+  useConnectionsSync,
+  useModalContext,
+  useSettings,
+} from './lib/store'
 import { applyTheme, THEME_MEDIA_QUERY } from './lib/theme'
 import { DEFAULT_PING_TEST_TIMEOUT, DEFAULT_PING_TEST_URL, type Config, type ThemeMode } from './lib/types'
 import { parseClashApiCredentials } from './lib/utils'
@@ -111,6 +122,8 @@ const ModalManager = memo(function ModalManager({
 
 function AppContent({ onLogout }: { onLogout: () => void }) {
   const { dispatch, showToast } = useAppActions()
+  const { state } = useAppContext()
+  const [activeSection, setActiveSection] = useState('home')
   const editorRef = useRef<CodeMirrorRef | null>(null)
   const configActionsRef = useRef<{ switchTab: (index: number) => void; getActiveIndex: () => number }>({
     switchTab: () => { },
@@ -199,7 +212,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         }
 
         if (!showUpdateToast) return
-        if (ui.show_toast) showToast({ title: 'Доступно обновление', body: 'Доступна новая версия XKeen UI', persistent: true, id: 'update-ui', ...(ui.link && { action: { url: ui.link } }) })
+        if (ui.show_toast) showToast({ title: 'Доступно обновление', body: 'Доступна новая версия DHQClash Router', persistent: true, id: 'update-ui', ...(ui.link && { action: { url: ui.link } }) })
 
         for (const core of ['mihomo', 'xray']) {
           const entry = data[core]
@@ -431,10 +444,35 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
     [dispatch]
   )
 
-  return (
-    <div className="bg-muted dark:bg-background flex min-h-dvh flex-col">
-      <main className="flex flex-1 flex-col">
-        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-3 px-3 py-3">
+  useConnectionsSync(
+    activeSection !== 'advanced' && state.currentCore === 'mihomo' ? state.clashApiPort : null,
+    state.clashApiSecret,
+    state.serviceStatus,
+    state.clashApiUnix
+  )
+
+  const navigation: ShellNavigationItem[] = [
+    { id: 'home', label: 'Главная', description: 'Состояние защиты' },
+    { id: 'routing', label: 'Маршрутизация', description: 'Текущий маршрут' },
+    { id: 'devices', label: 'Устройства', description: 'Активные соединения' },
+    { id: 'diagnostics', label: 'Диагностика', description: 'Проверки и журнал' },
+  ]
+
+  const sectionTitles: Record<string, string> = {
+    home: 'Главная',
+    routing: 'Маршрутизация',
+    devices: 'Устройства',
+    diagnostics: 'Диагностика',
+    advanced: 'Расширенный режим',
+  }
+
+  const renderSection = () => {
+    if (activeSection === 'routing') return <RoutingView />
+    if (activeSection === 'devices') return <DevicesView />
+    if (activeSection === 'diagnostics') return <DiagnosticsView />
+    if (activeSection === 'advanced') {
+      return (
+        <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-3">
           <StatusBar
             onOpenCoreManage={() => openModal('showCoreManageModal')}
             onOpenSettings={() => openModal('showSettingsModal')}
@@ -456,7 +494,25 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
           />
           <LogPanel />
         </div>
-      </main>
+      )
+    }
+    return <RouterDashboard onOpenRouting={() => setActiveSection('routing')} />
+  }
+
+  return (
+    <>
+      <RouterShell
+        activeItem={activeSection}
+        onNavigate={setActiveSection}
+        navigation={navigation}
+        secondaryNavigation={[{ id: 'advanced', label: 'Расширенный режим', description: 'Конфиги, ядра и бэкапы' }]}
+        title={sectionTitles[activeSection] ?? 'DHQClash Router'}
+        status={state.serviceStatus === 'running' ? 'running' : state.serviceStatus === 'pending' || state.serviceStatus === 'loading' ? 'pending' : 'stopped'}
+        onOpenSettings={() => openModal('showSettingsModal')}
+        onLogout={logout}
+      >
+        {renderSection()}
+      </RouterShell>
       <Toast />
       <ModalManager
         onSwitchCore={switchCore}
@@ -466,7 +522,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         onImportTemplate={importTemplate}
         openModal={openModal}
       />
-    </div>
+    </>
   )
 }
 

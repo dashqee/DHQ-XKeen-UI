@@ -1,7 +1,13 @@
 import { createRoot } from 'react-dom/client'
 
-import App from './App.tsx'
 import './globals.css'
 import './lib/outboundParser.js'
 
-createRoot(document.getElementById('root')!).render(<App />)
+const loadApp =
+  import.meta.env.VITE_APP_MODE === 'external'
+    ? () => import('./ExternalApp.tsx')
+    : () => import('./App.tsx')
+
+void loadApp().then(({ default: App }) => {
+  createRoot(document.getElementById('root')!).render(<App />)
+})

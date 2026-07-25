@@ -29,7 +29,6 @@ use std::path::Path;
 use std::process::{exit};
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
-use tower_http::cors::CorsLayer;
 
 const STYLES: Styles = Styles::styled()
     .header(AnsiColor::Yellow.on_default().bold())
@@ -38,7 +37,7 @@ const STYLES: Styles = Styles::styled()
     .placeholder(AnsiColor::Cyan.on_default());
 
 #[derive(Parser)]
-#[command(name = "xkeen-ui", before_help = "", about = "Веб-панель управления сервисом XKeen", disable_version_flag = true, disable_help_subcommand = true, styles = STYLES)]
+#[command(name = "xkeen-ui", before_help = "", about = "DHQClash Router — панель управления маршрутизацией", disable_version_flag = true, disable_help_subcommand = true, styles = STYLES)]
 struct Cli {
     #[arg(
         short = 'p',
@@ -243,7 +242,7 @@ async fn main() {
             .and_then(|json| json.get("xkeen")?.get("rci_token")?.as_str().map(String::from));
 
         let mut router_req = reqwest::blocking::Client::builder()
-            .user_agent("XKeen-UI")
+            .user_agent("DHQClash-Router")
             .build()
             .unwrap()
             .get("http://127.0.0.1:79/rci/show/version");
@@ -259,7 +258,7 @@ async fn main() {
             .unwrap_or("");
         let os = router_info.as_ref().and_then(|i| i["title"].as_str()).unwrap_or("");
 
-        println!("  {}", format!("XKeen UI {}", VERSION).cyan().bold());
+        println!("  {}", format!("DHQClash Router {}", VERSION).cyan().bold());
         println!("  {} {}", "Target:".cyan().bold(), env!("BUILD_TARGET"));
         if !device.is_empty() {
             println!("  {} {}", "Device:".cyan().bold(), device);
@@ -289,7 +288,7 @@ async fn main() {
                 let err = std::process::Command::new("sh")
                     .args([
                         "-c",
-                        "curl -L https://raw.githubusercontent.com/zxc-rv/XKeen-UI/main/setup.sh | sh",
+                        "curl -L https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh | sh",
                     ])
                     .exec();
                 eprintln!(" {} {}", " Ошибка запуска setup:".red().bold(), err);
@@ -368,7 +367,7 @@ async fn main() {
     }
 
     setup_process_logging();
-    println!("XKeen UI {} ({})", VERSION, get_arch());
+    println!("DHQClash Router {} ({})", VERSION, get_arch());
 
     refresh_xray_log_paths();
     let error_log = error_log_path();
@@ -416,7 +415,7 @@ async fn main() {
         settings: Arc::new(RwLock::new(load_settings())),
         init_file: Arc::new(RwLock::new(init_file)),
         http_client: reqwest::Client::builder()
-            .user_agent("XKeen-UI")
+            .user_agent("DHQClash-Router")
             .connect_timeout(std::time::Duration::from_secs(5))
             .timeout(std::time::Duration::from_secs(120))
             .build()
@@ -501,7 +500,6 @@ async fn main() {
         .merge(secure_api)
         .merge(unsecure_api)
         .fallback(frontend_embedder::serve)
-        .layer(CorsLayer::permissive())
         .with_state(state);
     let addr: SocketAddr = format!("0.0.0.0:{}", cli.port)
         .parse()

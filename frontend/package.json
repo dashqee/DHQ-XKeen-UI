@@ -1,11 +1,14 @@
 {
-  "name": "xkeen-ui",
+  "name": "dhqclash-router-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:router": "tsc -b && vite build",
+    "build:external": "tsc -b && vite build --mode external",
+    "build:all": "npm run build:router && npm run build:external",
     "lint": "eslint .",
     "format": "prettier . -w",
     "preview": "vite preview"

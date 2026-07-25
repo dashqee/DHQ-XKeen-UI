@@ -557,7 +557,7 @@ fn collect_backup_content<'a>(paths: impl Iterator<Item = &'a str>) -> BackupCon
 fn content_label(content: &str) -> &'static str {
     match content {
         "xkeen" => "XKeen",
-        "xkeen-ui" => "XKeen UI",
+        "xkeen-ui" => "DHQClash Router",
         "xray" => "Xray",
         "mihomo" => "Mihomo",
         _ => unreachable!("unknown backup content: {content}"),

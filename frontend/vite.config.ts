@@ -4,9 +4,15 @@ import path from 'path'
 import { defineConfig } from 'vite'
 import { compression } from 'vite-plugin-compression2'
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const isExternalUi = mode === 'external'
   return {
-    plugins: [react(), tailwindcss(), compression({ exclude: /index.html$/, deleteOriginalAssets: true, algorithms: ['gzip'] })],
+    base: isExternalUi ? './' : '/',
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(isExternalUi ? [] : [compression({ exclude: /index.html$/, deleteOriginalAssets: true, algorithms: ['gzip'] })]),
+    ],
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },
@@ -30,6 +36,7 @@ export default defineConfig(() => {
       },
     },
     build: {
+      outDir: isExternalUi ? 'dist-external' : 'dist',
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {

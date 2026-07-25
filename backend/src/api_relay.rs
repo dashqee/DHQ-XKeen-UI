@@ -89,7 +89,7 @@ pub async fn proxy_http(State(state): State<AppState>, Path(path): Path<String>,
             let url = build_url("http", "127.0.0.1", "80", &path, parts.uri.query());
             let client = match reqwest::Client::builder()
                 .unix_socket(socket_path)
-                .user_agent("XKeen-UI")
+                .user_agent("DHQClash-Router")
                 .timeout(Duration::from_secs(120))
                 .build()
             {

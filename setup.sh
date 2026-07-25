@@ -50,14 +50,14 @@ get_arch() {
 }
 
 download_files() {
-  local base_url="https://github.com/zxc-rv/XKeen-UI/releases"
+  local base_url="https://github.com/dashqee/DHQ-XKeen-UI/releases"
   local download_url="$base_url/latest/download"
-  local bin_name="xkeen-ui-$ARCH"
+  local bin_name="dhqclash-router-$ARCH"
 
   if [ "$BETA" = true ]; then
     local beta_tag="/tmp/xkeen_beta"
     trap "rm -f $beta_tag" EXIT
-    (curl -s https://api.github.com/repos/zxc-rv/XKeen-UI/releases | \
+    (curl -s https://api.github.com/repos/dashqee/DHQ-XKeen-UI/releases | \
   jq -re '.[0] | select(.prerelease == true) | .tag_name' > $beta_tag) &
     if ! spinner $! "Поиск бета-релиза..."; then
       printf "${RED_BOLD}\n Нет актуального бета-релиза${NCN}"
@@ -85,21 +85,21 @@ download_files() {
 
 install_xkeenui() {
   if [[ -d $STATIC_DIR || -f $XKEENUI_BIN || -f $XKEENUI_INIT || -f $LIGHTTPD_CONF ]]; then
-    printf "${YELLOW}\n Обнаружены файлы XKeen UI, запуск переустановки...\n${NC}"
+    printf "${YELLOW}\n Обнаружены файлы DHQClash Router, запуск переустановки...\n${NC}"
     uninstall_xkeenui
   fi
 
   printf "${INFO} Начинаем установку...${NCN}"
 
-  [ -f "/opt/tmp/xkeen-ui-$ARCH" ] && LOCAL=true
+  [ -f "/opt/tmp/dhqclash-router-$ARCH" ] && LOCAL=true
 
   download_files; create_xkeenui_init
 
   sync & spinner $! "Запись данных..."
 
   $XKEENUI_INIT start &>/dev/null &
-  if ! spinner $! "Запуск XKeen UI..."; then
-    printf "${RED_BOLD}\n Не удалось запустить XKeen UI.${NCN}"
+  if ! spinner $! "Запуск DHQClash Router..."; then
+    printf "${RED_BOLD}\n Не удалось запустить DHQClash Router.${NCN}"
     exit 1
   fi
 
@@ -107,7 +107,7 @@ install_xkeenui() {
 }
 
 update_xkeenui() {
-  [ -f "$XKEENUI_BIN" ] || { printf "${ERROR} Ошибка: XKeen UI не установлен!${NCN}"; exit 1; }
+  [ -f "$XKEENUI_BIN" ] || { printf "${ERROR} Ошибка: DHQClash Router не установлен!${NCN}"; exit 1; }
 
   printf "${INFO} Начинаем обновление...${NCN}"
 
@@ -124,7 +124,7 @@ update_xkeenui() {
       $XKEENUI_INIT stop &>/dev/null || :
       killall -q -9 xkeen-ui || :
     ) &
-    spinner $! "Остановка XKeen UI..."
+    spinner $! "Остановка DHQClash Router..."
   else
     sed -i 's|^PROCS=/opt/sbin/xkeen-ui$|PROCS=xkeen-ui|' /opt/etc/init.d/S99xkeen-ui
   fi
@@ -134,8 +134,8 @@ update_xkeenui() {
   sync & spinner $! "Запись данных..."
 
   $XKEENUI_INIT start &>/dev/null &
-  if ! spinner $! "Запуск XKeen UI..."; then
-    printf "${RED_BOLD}\n Не удалось запустить XKeen UI.${NCN}"
+  if ! spinner $! "Запуск DHQClash Router..."; then
+    printf "${RED_BOLD}\n Не удалось запустить DHQClash Router.${NCN}"
     exit 1
   fi
 
@@ -143,7 +143,7 @@ update_xkeenui() {
 }
 
 uninstall_xkeenui() {
-  printf "\n Данное действие ${RED_BOLD}удалит${NC} XKeen UI, его файлы и зависимости.\n\n"
+  printf "\n Данное действие ${RED_BOLD}удалит${NC} DHQClash Router, его файлы и зависимости.\n\n"
   read -p " Продолжить? [y/N]: " response < /dev/tty
   response=$(printf '%s' "$response" | tr -cd 'YyNn')
   case "$response" in
@@ -166,18 +166,18 @@ uninstall_xkeenui() {
       fi
     fi
   ) &
-  spinner $! "Остановка XKeen UI..."
+  spinner $! "Остановка DHQClash Router..."
 
   (rm -rf $STATIC_DIR; rm -f $XKEENUI_BIN $XKEENUI_INIT) &
-  spinner $! "Удаление файлов XKeen UI..."
-  printf "${SUCCESS} Удаление XKeen-UI завершено${NCN}"
+  spinner $! "Удаление файлов DHQClash Router..."
+  printf "${SUCCESS} Удаление DHQClash Router завершено${NCN}"
 }
 
 finish_setup() {
   local ip=$(ip -4 a s br0 2>/dev/null | sed -n 's/.*inet \([0-9.]*\).*/\1/p'); ip=${ip:-"IP_Роутера"}
   local port=$(sed -n 's/.*-p \([0-9]*\).*/\1/p' $XKEENUI_INIT 2>/dev/null); port=${port:-1000}
 
-  printf "${SUCCESS} XKeen UI успешно $1!${NCN}"
+  printf "${SUCCESS} DHQClash Router успешно $1!${NCN}"
   printf " Панель доступна по адресу: ${GREEN_BOLD}http://$ip:$port${NC}\n\n"
 }
 
@@ -185,7 +185,7 @@ legacy_installation_check() {
   if [ -f "$LIGHTTPD_CONF" ]; then
     $LIGHTTPD_INIT status &>/dev/null && $LIGHTTPD_INIT stop
     rm -f "$LIGHTTPD_CONF"
-    printf "${YELLOW}\n Веб-сервер lighttpd для работы XKeen UI более не используется.\n${NC}"
+    printf "${YELLOW}\n Веб-сервер lighttpd для работы DHQClash Router более не используется.\n${NC}"
     read -p " Удалить его? [Y/n]: " response < /dev/tty
     response=$(printf '%s' "$response" | tr -cd 'YyNn')
     case "$response" in
@@ -227,11 +227,12 @@ clear
 get_arch
 printf "${CYAN}"
 cat <<'EOF'
-   _  __  __ __                       __  __ ____
-  | |/ / / //_/___   ___   ____      / / / //  _/
-  |   / / ,<  / _ \ / _ \ / __ \    / / / / / /
- /   | / /| |/  __//  __// / / /   / /_/ /_/ /
-/_/|_|/_/ |_|\___/ \___//_/ /_/    \____//___/
+  ____  __  ______  ________           __
+ / __ \/ / / / __ \/ ____/ /___ _____/ /_
+/ / / / /_/ / / / / /   / / __ `/ __  /
+/ /_/ / __  / /_/ / /___/ / /_/ / /_/ /
+\___\_\/ /_/_____/\____/_/\__,_/\__,_/
+                    Router
 EOF
 
 printf "${NC}\n$(get_status)\n"
