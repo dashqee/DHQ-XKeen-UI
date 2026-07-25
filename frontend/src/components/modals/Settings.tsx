@@ -1,4 +1,3 @@
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -9,7 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { IconAlertCircle, IconChevronDown, IconChevronUp, IconSettings, IconX } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp, IconSettings, IconX } from '@tabler/icons-react'
 import { Fragment, memo, useCallback, useState } from 'react'
 import { apiCall } from '../../lib/api'
 import { useAppContext, useModalContext } from '../../lib/store'
@@ -28,30 +27,6 @@ type ToggleSetting = {
 }
 
 type ToggleSettingHandler = (item: ToggleSetting, value: boolean) => void
-
-const guiSettings: ToggleSetting[] = [
-  {
-    id: 'gui-routing',
-    key: 'guiRouting',
-    path: 'gui.routing',
-    title: 'Routing',
-    description: 'Визуализация правил роутинга для Xray',
-  },
-  {
-    id: 'gui-log',
-    key: 'guiLog',
-    path: 'gui.log',
-    title: 'Log',
-    description: 'Визуализация настроек логирования для Xray',
-  },
-  {
-    id: 'auto-apply',
-    key: 'autoApply',
-    path: 'gui.auto_apply',
-    title: 'Автоприменение',
-    description: 'Автоматически применять следующие изменения в режиме GUI:\n • Routing: изменение outboundTag\n • Log: любые изменения',
-  },
-]
 
 const updateSettings: ToggleSetting[] = [
   {
@@ -352,7 +327,7 @@ export function SettingsModal() {
       const [section, key] = path.split('.')
       try {
         const body: Record<string, unknown> = {}
-        if (['gui', 'updater', 'log', 'auth', 'clash_api'].includes(section)) body[section] = key ? { [key]: value } : value
+        if (['updater', 'log', 'auth', 'clash_api'].includes(section)) body[section] = key ? { [key]: value } : value
         const result = await apiCall<any>('PATCH', 'settings', body)
         if (!result.success) {
           showToast('Ошибка: ' + result.error, 'error')
@@ -485,7 +460,6 @@ export function SettingsModal() {
               className="border-border w-max shrink-0 justify-start gap-3 rounded-none border-b px-0 whitespace-nowrap"
             >
               <TabsTrigger value="general">Общие</TabsTrigger>
-              <TabsTrigger value="gui">Режим GUI</TabsTrigger>
               <TabsTrigger value="clash-api">Clash API</TabsTrigger>
               <TabsTrigger value="updates">Обновления</TabsTrigger>
             </TabsList>
@@ -542,24 +516,6 @@ export function SettingsModal() {
                       </SelectContent>
                     </Select>
                   </Field>
-                </FieldGroup>
-              </TabsContent>
-
-              <TabsContent value="gui">
-                <Alert className="my-2 border-amber-500/20 bg-amber-100 p-2.75 text-yellow-600 dark:bg-[#2a1f0d] dark:text-amber-400">
-                  <IconAlertCircle className="size-4.5" />
-                  <AlertDescription className="text-xs leading-4.25 tracking-wide text-yellow-600 dark:text-amber-400">
-                    Функция экспериментальная. Перед включением сделайте бэкап конфигураций. Несовместимо с комментариями.
-                  </AlertDescription>
-                </Alert>
-
-                <FieldGroup className="gap-0!">
-                  {guiSettings.map((item, index) => (
-                    <Fragment key={item.id}>
-                      <SwitchSettingField item={item} checked={settings[item.key]} onToggleSetting={toggleSetting} />
-                      {index < guiSettings.length - 1 && <Separator className="my-0" />}
-                    </Fragment>
-                  ))}
                 </FieldGroup>
               </TabsContent>
 

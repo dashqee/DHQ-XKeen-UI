@@ -7,7 +7,7 @@ use futures_util::StreamExt;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::{Cursor, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -40,7 +40,6 @@ enum DownloadResult {
 
 pub fn get_repo(core: &str) -> Option<&'static str> {
     match core {
-        "xray" => Some("XTLS/Xray-core"),
         "mihomo" => Some("MetaCubeX/mihomo"),
         "self" => Some("dashqee/DHQ-XKeen-UI"),
         _ => None,
@@ -238,28 +237,6 @@ async fn save(dl: DownloadResult, out_path: PathBuf) -> std::io::Result<()> {
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
 }
 
-async fn install_jq() -> Result<(), String> {
-    log("INFO", "Установка jq через opkg...".into());
-    let update = Command::new("opkg")
-        .arg("update")
-        .status()
-        .await
-        .map_err(|e| format!("opkg update: {}", e))?;
-    if !update.success() {
-        return Err("Ошибка обновления opkg кеша".into());
-    }
-    let install = Command::new("opkg")
-        .args(["install", "jq"])
-        .status()
-        .await
-        .map_err(|e| format!("opkg install jq: {}", e))?;
-    if !install.success() {
-        return Err("Ошибка установки jq".into());
-    }
-    log("INFO", "Пакет jq установлен".into());
-    Ok(())
-}
-
 async fn install_yq(client: &reqwest::Client, proxies: &[String], tmp_dir: &Path) -> Result<(), String> {
     let arch = std::env::consts::ARCH;
     let url = match arch {
@@ -316,7 +293,11 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
         "INFO",
         format!(
             "Запущено обновление {} до {}",
-            if req.core == "self" { "DHQClash Router" } else { &core_cap },
+            if req.core == "self" {
+                "DHQClash Router"
+            } else {
+                &core_cap
+            },
             ver
         ),
     );
@@ -351,13 +332,11 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
         let integrity_check = tokio::task::spawn_blocking({
             let source = source.clone();
             move || -> Result<(), String> {
-                let meta = std::fs::metadata(&source)
-                    .map_err(|e| format!("Ошибка проверки файла: {}", e))?;
+                let meta = std::fs::metadata(&source).map_err(|e| format!("Ошибка проверки файла: {}", e))?;
                 if meta.len() < 1024 * 1024 {
                     return Err("Файл меньше 1МБ — повреждённый артефакт".into());
                 }
-                let mut f = std::fs::File::open(&source)
-                    .map_err(|e| format!("Ошибка открытия файла: {}", e))?;
+                let mut f = std::fs::File::open(&source).map_err(|e| format!("Ошибка открытия файла: {}", e))?;
                 let mut magic = [0u8; 4];
                 f.read_exact(&mut magic)
                     .map_err(|e| format!("Ошибка чтения файла: {}", e))?;
@@ -401,16 +380,7 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
         }
         return response(true, None);
     }
-    let (asset, url) = match req.core.as_str() {
-        "xray" => {
-            let x = match arch {
-                "aarch64" => "Xray-linux-arm64-v8a.zip",
-                "mips" if cfg!(target_endian = "little") => "Xray-linux-mips32le.zip",
-                "mips" => "Xray-linux-mips32.zip",
-                _ => return response(false, Some("Архитектура не поддерживается".into())),
-            };
-            (x.into(), format!("{GITHUB_RELEASE}/{repo}/releases/download/{ver}/{x}"))
-        }
+    let url = match req.core.as_str() {
         "mihomo" => {
             let m = match arch {
                 "aarch64" => "arm64",
@@ -426,32 +396,20 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
                     .find(|a| a.contains(&arch_suffix) && a.ends_with(".gz"));
 
                 match found {
-                    Some(name) => (
-                        name.clone(),
-                        format!("{}/{}/releases/download/{}/{}", GITHUB_RELEASE, repo, ver, name),
-                    ),
+                    Some(name) => format!("{}/{}/releases/download/{}/{}", GITHUB_RELEASE, repo, ver, name),
                     None => {
                         return response(false, Some("Ассет не найден — обновите страницу и повторите".into()));
                     }
                 }
             } else {
                 let n = format!("mihomo-linux-{}-{}.gz", m, ver);
-                (
-                    n.clone(),
-                    format!("{}/{}/releases/download/{}/{}", GITHUB_RELEASE, repo, ver, n),
-                )
+                format!("{}/{}/releases/download/{}/{}", GITHUB_RELEASE, repo, ver, n)
             }
         }
         _ => return response(false, Some("Неизвестное ядро".into())),
     };
 
     match req.core.as_str() {
-        "xray" if !Path::new("/opt/bin/jq").exists() => {
-            log("WARN", "Пакет jq не найден".into());
-            if let Err(e) = install_jq().await {
-                return response(false, Some(e));
-            }
-        }
         "mihomo" if !Path::new("/opt/sbin/yq").exists() => {
             log("WARN", "Пакет yq не найден".into());
             if let Err(e) = install_yq(&state.http_client, &proxies, tmp_dir).await {
@@ -468,15 +426,11 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
     };
 
     log("INFO", "Установка обновления...".into());
-    let (core_name, is_zip) = (req.core.clone(), asset.ends_with(".zip"));
+    let core_name = req.core.clone();
 
-    fn unpack<R: Read + Seek>(rdr: R, out_path: &Path, core: &str, is_zip: bool) -> std::io::Result<()> {
+    fn unpack<R: Read>(rdr: R, out_path: &Path) -> std::io::Result<()> {
         let mut out = File::create(out_path)?;
-        if is_zip {
-            std::io::copy(&mut zip::ZipArchive::new(rdr)?.by_name(core)?, &mut out)?;
-        } else {
-            std::io::copy(&mut flate2::read::GzDecoder::new(rdr), &mut out)?;
-        }
+        std::io::copy(&mut flate2::read::GzDecoder::new(rdr), &mut out)?;
         out.sync_data()?;
         Ok(())
     }
@@ -485,9 +439,9 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
     let unpack = tokio::task::spawn_blocking(move || -> std::io::Result<()> {
         let bin = tmp_dir.join(&tmp_name);
         match dl_res {
-            DownloadResult::RAM(d) => unpack(Cursor::new(d), &bin, &core_name, is_zip)?,
+            DownloadResult::RAM(d) => unpack(Cursor::new(d), &bin)?,
             DownloadResult::Disk(p) => {
-                unpack(File::open(&p)?, &bin, &core_name, is_zip)?;
+                unpack(File::open(&p)?, &bin)?;
                 _ = std::fs::remove_file(p);
             }
         };

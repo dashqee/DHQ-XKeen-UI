@@ -1,5 +1,5 @@
 use crate::logger::log;
-use crate::types::{APP_CONFIG, ApiResponse, AppState, MIHOMO_CONF_DIR, XKEEN_CONF_DIR, XRAY_CONF_DIR};
+use crate::types::{APP_CONFIG, ApiResponse, AppState, MIHOMO_CONF_DIR, XKEEN_CONF_DIR};
 use axum::Json;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -28,7 +28,7 @@ fn mtime_string(time: Result<SystemTime, std::io::Error>, tz: i32) -> String {
 
 const BACKUP_DIR: &str = "/opt/backups";
 const BACKUP_SUFFIX: &str = "xkeen-ui.tar";
-const CONTENT_ORDER: [&str; 4] = ["xkeen", "xkeen-ui", "xray", "mihomo"];
+const CONTENT_ORDER: [&str; 3] = ["xkeen", "xkeen-ui", "mihomo"];
 
 #[derive(Serialize)]
 struct BackupListData {
@@ -55,8 +55,6 @@ struct BackupContentFiles {
     #[serde(rename = "xkeen-ui", skip_serializing_if = "Vec::is_empty")]
     xkeen_ui: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    xray: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     mihomo: Vec<String>,
 }
 
@@ -65,7 +63,6 @@ impl BackupContentFiles {
         match key {
             "xkeen" => self.xkeen.push(file),
             "xkeen-ui" => self.xkeen_ui.push(file),
-            "xray" => self.xray.push(file),
             "mihomo" => self.mihomo.push(file),
             _ => unreachable!("unknown backup content: {key}"),
         }
@@ -74,7 +71,6 @@ impl BackupContentFiles {
     fn sort(&mut self) {
         self.xkeen.sort();
         self.xkeen_ui.sort();
-        self.xray.sort();
         self.mihomo.sort();
     }
 }
@@ -320,7 +316,14 @@ fn rename_backup_sync(name: &str, new_name: &str) -> Result<(), String> {
         return Err("файл с таким именем уже существует".into());
     }
     fs::rename(&backup_path, &new_path).map_err(io_error)?;
-    log("INFO", format!("Бэкап конфигураций переименован: {} -> {}", backup_path.display(), new_path.display()));
+    log(
+        "INFO",
+        format!(
+            "Бэкап конфигураций переименован: {} -> {}",
+            backup_path.display(),
+            new_path.display()
+        ),
+    );
     Ok(())
 }
 
@@ -335,7 +338,6 @@ fn is_tar_file(path: &Path) -> bool {
 fn collect_backup_files() -> io::Result<Vec<(PathBuf, String)>> {
     let mut files = Vec::new();
     files.extend(collect_dir_files(XKEEN_CONF_DIR, &["lst", "json"])?);
-    files.extend(collect_dir_files(XRAY_CONF_DIR, &["json"])?);
     files.extend(collect_dir_files(MIHOMO_CONF_DIR, &["yaml", "yml"])?);
     files.sort_by(|a, b| a.1.cmp(&b.1));
     Ok(files)
@@ -480,9 +482,6 @@ fn detect_content_key(relative: &str) -> Option<&'static str> {
     if check_prefix(XKEEN_CONF_DIR, &["lst", "json"]).is_some() {
         return Some("xkeen");
     }
-    if check_prefix(XRAY_CONF_DIR, &["json"]).is_some() {
-        return Some("xray");
-    }
     if check_prefix(MIHOMO_CONF_DIR, &["yaml", "yml"]).is_some() {
         return Some("mihomo");
     }
@@ -558,7 +557,6 @@ fn content_label(content: &str) -> &'static str {
     match content {
         "xkeen" => "XKeen",
         "xkeen-ui" => "DHQClash Router",
-        "xray" => "Xray",
         "mihomo" => "Mihomo",
         _ => unreachable!("unknown backup content: {content}"),
     }
@@ -567,7 +565,6 @@ fn content_label(content: &str) -> &'static str {
 fn content_file_name(key: &str, relative: &str) -> String {
     match key {
         "xkeen" => strip_content_prefix(relative, XKEEN_CONF_DIR),
-        "xray" => strip_content_prefix(relative, XRAY_CONF_DIR),
         "mihomo" => strip_content_prefix(relative, MIHOMO_CONF_DIR),
         "xkeen-ui" => Path::new(relative)
             .file_name()

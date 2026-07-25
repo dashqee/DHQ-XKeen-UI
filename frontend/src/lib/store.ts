@@ -19,9 +19,6 @@ import { clashWsUrl } from './websocket'
 
 const initialSettings: AppSettings = {
   theme: getStoredTheme(),
-  autoApply: false,
-  guiRouting: false,
-  guiLog: false,
   autoCheckUI: true,
   autoCheckCore: true,
   backupCore: true,
@@ -40,7 +37,7 @@ const initialState: AppState = {
   serviceStatus: 'loading',
   pendingText: '',
   currentCore: '',
-  coreVersions: { xray: '', mihomo: '' },
+  coreVersions: { mihomo: '' },
   availableCores: [],
   configs: [],
   isConfigsLoading: true,
@@ -59,8 +56,6 @@ const initialState: AppState = {
   showImportModal: false,
   showTemplateModal: false,
   showSettingsModal: false,
-  showCommentsWarningModal: false,
-  showGeoScanModal: false,
   showBackupsModal: false,
   updateModalCore: '',
   toasts: [],
@@ -148,8 +143,6 @@ type CoreState = Omit<
   | 'showImportModal'
   | 'showTemplateModal'
   | 'showSettingsModal'
-  | 'showCommentsWarningModal'
-  | 'showGeoScanModal'
   | 'showBackupsModal'
   | 'updateModalCore'
   | 'pendingSaveAction'
@@ -168,8 +161,6 @@ type ModalState = Pick<
   | 'showImportModal'
   | 'showTemplateModal'
   | 'showSettingsModal'
-  | 'showCommentsWarningModal'
-  | 'showGeoScanModal'
   | 'showBackupsModal'
   | 'updateModalCore'
   | 'pendingSaveAction'
@@ -265,8 +256,6 @@ export function useModalContext() {
         showImportModal: s.showImportModal,
         showTemplateModal: s.showTemplateModal,
         showSettingsModal: s.showSettingsModal,
-        showCommentsWarningModal: s.showCommentsWarningModal,
-        showGeoScanModal: s.showGeoScanModal,
         showBackupsModal: s.showBackupsModal,
         updateModalCore: s.updateModalCore,
         pendingSaveAction: s.pendingSaveAction,

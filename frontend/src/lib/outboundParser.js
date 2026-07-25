@@ -358,43 +358,14 @@ function convertToMihomoYaml(proxyConfig) {
   return `  - ${toYaml(common).trim().replace(/\n/g, '\n    ')}`
 }
 
-const parseHysteria2Xray = (uri) => {
-  const url = new URL(uri)
-  const params = Object.fromEntries([...url.searchParams].map(([k, v]) => [k.toLowerCase(), v]))
-  const tag = decodeURIComponent(url.hash.slice(1)) || 'PROXY'
-  let finalmask = { quicParams: { congestion: 'bbr', debug: false } }
-  try {
-    if (params.fm) finalmask = JSON.parse(decodeURIComponent(params.fm))
-  } catch { }
-
-  const streamSettings = getStreamSettings('hysteria', { ...params, security: params.security || 'tls' })
-  streamSettings.hysteriaSettings = {
-    auth: decodeURIComponent(url.password ? `${url.username}:${url.password}` : url.username),
-    version: 2,
-  }
-  if (streamSettings.tlsSettings) streamSettings.tlsSettings.alpn = streamSettings.tlsSettings.alpn || ['h3']
-  streamSettings.finalmask = finalmask
-
-  return {
-    tag,
-    protocol: 'hysteria',
-    settings: {
-      address: url.hostname,
-      port: +url.port || 443,
-      version: 2,
-    },
-    streamSettings,
-  }
-}
-
-function generateConfigForCore(uri, core = 'xray', existingConfig = '') {
+function generateMihomoConfig(uri, existingConfig = '') {
   const generateName = (base) => {
     let index = 1
     while (existingConfig.includes(`${base}_${index}`)) index++
     return `${base}_${index}`
   }
 
-  if (uri.startsWith('http') && core === 'mihomo') {
+  if (uri.startsWith('http')) {
     const name = generateName('subscription')
     return {
       type: 'proxy-provider',
@@ -422,19 +393,10 @@ function generateConfigForCore(uri, core = 'xray', existingConfig = '') {
     }
   }
 
-  if (core !== 'mihomo' && uri.startsWith('http')) throw new Error('Подписки в Xray не поддерживаются')
-  if (core !== 'mihomo' && (uri.startsWith('hysteria2') || uri.startsWith('hy2'))) {
-    const config = parseHysteria2Xray(uri)
-    if (config.tag === 'PROXY' || existingConfig.includes(config.tag)) config.tag = generateName('hysteria')
-    return { type: 'outbound', content: JSON.stringify(config, null, 2) }
-  }
-
   const config = parseProxyUri(uri)
   if (config.tag === 'PROXY' || existingConfig.includes(config.tag)) config.tag = generateName(config.protocol)
 
-  return core === 'mihomo'
-    ? { type: 'proxy', content: convertToMihomoYaml(config) + '\n' }
-    : { type: 'outbound', content: JSON.stringify(config, null, 2) }
+  return { type: 'proxy', content: convertToMihomoYaml(config) + '\n' }
 }
 
-window.generateConfigForCore = generateConfigForCore
+window.generateMihomoConfig = generateMihomoConfig

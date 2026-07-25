@@ -19,7 +19,6 @@ const GITHUB_API = 'https://api.github.com/repos'
 const JSDELIVR_API = 'https://data.jsdelivr.com/v1/package/gh'
 const FETCH_TIMEOUT_MS = 5000
 const CORE_REPOS = {
-  xray: 'XTLS/Xray-core',
   mihomo: 'MetaCubeX/mihomo',
   self: 'dashqee/DHQ-XKeen-UI',
 } as const

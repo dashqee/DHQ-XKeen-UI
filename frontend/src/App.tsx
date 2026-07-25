@@ -8,12 +8,11 @@ import { RouterShell, type ShellNavigationItem } from './components/layout/Route
 import { LogPanel } from './components/log/LogPanel'
 import { StatusBar } from './components/status/StatusBar'
 import { Toast } from './components/ui/toast'
-import { apiCall, capitalize } from './lib/api'
+import { apiCall } from './lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from './lib/loader'
 import {
   fetchClashProxies,
   getAppState,
-  syncClashApiPort,
   useAppActions,
   useAppContext,
   useConnectionsSync,
@@ -23,15 +22,12 @@ import {
 import { applyTheme, THEME_MEDIA_QUERY } from './lib/theme'
 import { DEFAULT_PING_TEST_TIMEOUT, DEFAULT_PING_TEST_URL, type Config, type ThemeMode } from './lib/types'
 import { parseClashApiCredentials } from './lib/utils'
-import { parse as parseJsonc } from 'jsonc-parser'
 
-const CommentsWarningModal = lazyLoad(() => import('./components/modals/CommentsWarning'), 'CommentsWarningModal')
 const CoreManageModal = lazyLoad(() => import('./components/modals/CoreManagement'), 'CoreManageModal')
 const UpdateModal = lazyLoad(() => import('./components/modals/Update'), 'UpdateModal')
 const ImportModal = lazyLoad(() => import('./components/modals/AddProxy'), 'ImportModal')
 const TemplateModal = lazyLoad(() => import('./components/modals/Templates'), 'TemplateModal')
 const SettingsModal = lazyLoad(() => import('./components/modals/Settings'), 'SettingsModal')
-const GeoScanModal = lazyLoad(() => import('./components/modals/GeoScan'), 'GeoScanModal')
 
 function useThemeMode(theme: ThemeMode) {
   useEffect(() => {
@@ -47,7 +43,6 @@ function useThemeMode(theme: ThemeMode) {
 }
 
 interface ModalManagerProps {
-  onSwitchCore: (core: string) => void
   onInstalled: () => void
   onGenerate: (uri: string) => { content: string; type: string } | null
   onAddToConfig: (content: string, type: string, position: 'start' | 'end') => void
@@ -56,7 +51,6 @@ interface ModalManagerProps {
 }
 
 const ModalManager = memo(function ModalManager({
-  onSwitchCore,
   onInstalled,
   onGenerate,
   onAddToConfig,
@@ -65,25 +59,17 @@ const ModalManager = memo(function ModalManager({
 }: ModalManagerProps) {
   const { modals, dispatch } = useModalContext()
 
-  const mountCommentsWarning = useLazyMount(modals.showCommentsWarningModal)
   const mountCoreManage = useLazyMount(modals.showCoreManageModal)
   const mountUpdate = useLazyMount(modals.showUpdateModal)
   const mountImport = useLazyMount(modals.showImportModal)
   const mountTemplate = useLazyMount(modals.showTemplateModal)
   const mountSettings = useLazyMount(modals.showSettingsModal)
-  const mountGeoScan = useLazyMount(modals.showGeoScanModal)
 
   return (
     <>
-      {mountCommentsWarning && (
-        <LazyBoundary>
-          <CommentsWarningModal />
-        </LazyBoundary>
-      )}
       {mountCoreManage && (
         <LazyBoundary>
           <CoreManageModal
-            onSwitchCore={onSwitchCore}
             onOpenUpdate={(core: string) => {
               dispatch({ type: 'SET_UPDATE_MODAL_CORE', core })
               openModal('showUpdateModal')
@@ -111,11 +97,6 @@ const ModalManager = memo(function ModalManager({
           <SettingsModal />
         </LazyBoundary>
       )}
-      {mountGeoScan && (
-        <LazyBoundary>
-          <GeoScanModal />
-        </LazyBoundary>
-      )}
     </>
   )
 })
@@ -133,7 +114,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
   const checkStatus = useCallback(async () => {
     const data = await apiCall<any>('GET', 'control')
     if (!data.success) return null
-    const currentCore = data.currentCore || 'xray'
+    const currentCore = data.currentCore || 'mihomo'
     dispatch({
       type: 'SET_CORE_INFO',
       currentCore,
@@ -187,11 +168,9 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
 
         let isOutdatedCore = false
         const coreVersions: Record<string, string> = {}
-        for (const core of ['mihomo', 'xray']) {
-          if (data[core]?.version) {
-            coreVersions[core] = data[core].version
-            if (data[core].outdated) isOutdatedCore = true
-          }
+        if (data.mihomo?.version) {
+          coreVersions.mihomo = data.mihomo.version
+          if (data.mihomo.outdated) isOutdatedCore = true
         }
 
         dispatch({
@@ -214,17 +193,15 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         if (!showUpdateToast) return
         if (ui.show_toast) showToast({ title: 'Доступно обновление', body: 'Доступна новая версия DHQClash Router', persistent: true, id: 'update-ui', ...(ui.link && { action: { url: ui.link } }) })
 
-        for (const core of ['mihomo', 'xray']) {
-          const entry = data[core]
-          if (entry?.show_toast) {
-            showToast({
-              title: 'Доступно обновление',
-              body: `Доступна новая версия ${capitalize(core)}`,
-              persistent: true,
-              id: `update-${core}`,
-              ...(entry.link ? { action: { url: entry.link } } : {}),
-            })
-          }
+        const entry = data.mihomo
+        if (entry?.show_toast) {
+          showToast({
+            title: 'Доступно обновление',
+            body: 'Доступна новая версия Mihomo',
+            persistent: true,
+            id: 'update-mihomo',
+            ...(entry.link ? { action: { url: entry.link } } : {}),
+          })
         }
       } catch {
         /* ignore */
@@ -240,9 +217,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         dispatch({
           type: 'SET_SETTINGS',
           settings: {
-            autoApply: data.gui.auto_apply,
-            guiRouting: data.gui.routing,
-            guiLog: data.gui.log,
             autoCheckUI: data.updater.auto_check_ui ?? true,
             autoCheckCore: data.updater.auto_check_core ?? true,
             backupCore: data.updater.backup_core,
@@ -273,40 +247,9 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
     init()
   }, [checkStatus, loadConfigs, dispatch, showToast, checkVersion])
 
-  const switchCore = useCallback(
-    async (core: string) => {
-      const appState = getAppState()
-      if (core === appState.currentCore) {
-        showToast('Это ядро уже активно', 'error')
-        return
-      }
-      dispatch({ type: 'SHOW_MODAL', modal: 'showCoreManageModal', show: false })
-      dispatch({ type: 'SET_SERVICE_STATUS', status: 'pending', pendingText: 'Переключение...' })
-      const configs = await loadConfigs(core, true)
-      const mihomoYamlEmpty =
-        core === 'mihomo' && !configs.find((c) => c.file.endsWith('/config.yaml') || c.file === 'config.yaml')?.content.trim()
-      const result = await apiCall<any>('POST', 'control', { action: 'switchCore', core })
-      showToast(result.success ? `Ядро изменено на ${capitalize(core)}` : `Ошибка: ${result.error}`, result.success ? 'success' : 'error')
-      const data = await apiCall<any>('GET', 'control')
-      if (data.success) {
-        dispatch({
-          type: 'SET_CORE_INFO',
-          currentCore: data.currentCore,
-          coreVersions: getAppState().coreVersions,
-          availableCores: data.cores,
-        })
-        dispatch({ type: 'SET_SERVICE_STATUS', status: data.running ? 'running' : 'stopped' })
-        if (result.success && mihomoYamlEmpty) await loadConfigs(core)
-        else if (result.success) syncClashApiPort()
-      }
-    },
-    [dispatch, showToast, loadConfigs]
-  )
-
   const generateConfig = useCallback((uri: string) => {
-    const currentCore = getAppState().currentCore
-    if (typeof (window as any).generateConfigForCore === 'function')
-      return (window as any).generateConfigForCore(uri, currentCore, editorRef.current?.getValue() ?? '')
+    if (typeof (window as any).generateMihomoConfig === 'function')
+      return (window as any).generateMihomoConfig(uri, editorRef.current?.getValue() ?? '')
     throw new Error('Parser not loaded')
   }, [])
 
@@ -330,37 +273,12 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
   const addToConfig = useCallback(
     (generated: string, type: string, position: 'start' | 'end') => {
       const appState = getAppState()
-      const core = appState.currentCore
       let targetIndex = configActionsRef.current.getActiveIndex()
 
-      if (core === 'mihomo') {
-        targetIndex = appState.configs.findIndex((c) => c.file.endsWith('/config.yaml') || c.file === 'config.yaml')
-        if (targetIndex === -1) {
-          showToast('Файл config.yaml не найден', 'error')
-          return
-        }
-      } else {
-        try {
-          try {
-            const obj = parseJsonc(appState.configs[targetIndex].content)
-            if (!Array.isArray(obj.outbounds)) throw new Error()
-          } catch {
-            targetIndex = appState.configs.findIndex((cfg) => {
-              try {
-                return Array.isArray(parseJsonc(cfg.content).outbounds)
-              } catch {
-                return false
-              }
-            })
-            if (targetIndex === -1) {
-              showToast('Массив outbounds не найден', 'error')
-              return
-            }
-          }
-        } catch (e: any) {
-          showToast(`${e.message}`, 'error')
-          return
-        }
+      targetIndex = appState.configs.findIndex((c) => c.file.endsWith('/config.yaml') || c.file === 'config.yaml')
+      if (targetIndex === -1) {
+        showToast('Файл config.yaml не найден', 'error')
+        return
       }
 
       if (targetIndex !== configActionsRef.current.getActiveIndex()) configActionsRef.current.switchTab(targetIndex)
@@ -376,61 +294,49 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
           scrollToLine(scrollLine ?? editorWrapper.offsetToLineColumn(offset).lineNumber)
         }
 
-        if (core === 'mihomo') {
-          const marker = type === 'proxy' ? 'proxies:' : 'proxy-providers:'
-          const markerRegex = new RegExp(`^${marker}(.*)$`, 'm')
-          const markerMatch = current.match(markerRegex)
+        const marker = type === 'proxy' ? 'proxies:' : 'proxy-providers:'
+        const markerRegex = new RegExp(`^${marker}(.*)$`, 'm')
+        const markerMatch = current.match(markerRegex)
 
-          if (!markerMatch) {
-            const eofStr = current.endsWith('\n') ? '' : '\n'
-            const insertPos = current.length
-            const targetLine = lineAtOffset(current, insertPos) + (eofStr ? 2 : 1)
-            insertAtOffset(insertPos, `${eofStr}${marker}\n${generated}\n`, targetLine)
-            return
-          }
+        if (!markerMatch) {
+          const eofStr = current.endsWith('\n') ? '' : '\n'
+          const insertPos = current.length
+          const targetLine = lineAtOffset(current, insertPos) + (eofStr ? 2 : 1)
+          insertAtOffset(insertPos, `${eofStr}${marker}\n${generated}\n`, targetLine)
+          return
+        }
 
-          const markerIdx = markerMatch.index!
-          let markerLineEnd = current.indexOf('\n', markerIdx)
-          if (markerLineEnd === -1) markerLineEnd = current.length
-          else markerLineEnd += 1
+        const markerIdx = markerMatch.index!
+        let markerLineEnd = current.indexOf('\n', markerIdx)
+        if (markerLineEnd === -1) markerLineEnd = current.length
+        else markerLineEnd += 1
 
-          const lineContent = markerMatch[1].trim()
-          if (lineContent === '[]' || lineContent === 'null') {
-            const pre = current.slice(0, markerIdx)
-            const post = current.slice(markerLineEnd)
-            current = pre + marker + '\n' + post
-            editorWrapper.replaceAll(current)
-            markerLineEnd = markerIdx + marker.length + 1
-          }
+        const lineContent = markerMatch[1].trim()
+        if (lineContent === '[]' || lineContent === 'null') {
+          const pre = current.slice(0, markerIdx)
+          const post = current.slice(markerLineEnd)
+          current = pre + marker + '\n' + post
+          editorWrapper.replaceAll(current)
+          markerLineEnd = markerIdx + marker.length + 1
+        }
 
-          if (position === 'start') {
-            const line = lineAtOffset(current, markerLineEnd)
-            insertAtOffset(markerLineEnd, generated + '\n', line)
-          } else {
-            const afterMarker = markerLineEnd
-            const nextKeyMatch = current.slice(afterMarker).search(/^[a-zA-Z0-9_-]+:/m)
-            const insertOffset = nextKeyMatch === -1 ? current.length : afterMarker + nextKeyMatch
-            let textToInsert = generated + '\n'
-
-            let targetLine = lineAtOffset(current, insertOffset)
-
-            if (nextKeyMatch === -1 && !current.endsWith('\n')) {
-              textToInsert = '\n' + textToInsert
-              targetLine += 1
-            }
-
-            insertAtOffset(insertOffset, textToInsert, targetLine)
-          }
+        if (position === 'start') {
+          const line = lineAtOffset(current, markerLineEnd)
+          insertAtOffset(markerLineEnd, generated + '\n', line)
         } else {
-          try {
-            const obj = parseJsonc(current)
-            if (position === 'start') obj.outbounds.unshift(JSON.parse(generated))
-            else obj.outbounds.push(JSON.parse(generated))
-            editorWrapper.replaceAll(JSON.stringify(obj, null, 2))
-            scrollToLine(position === 'start' ? 1 : editorWrapper.getLineCount())
-          } catch (e: any) {
-            showToast(`Ошибка парсинга: ${e.message}`, 'error')
+          const afterMarker = markerLineEnd
+          const nextKeyMatch = current.slice(afterMarker).search(/^[a-zA-Z0-9_-]+:/m)
+          const insertOffset = nextKeyMatch === -1 ? current.length : afterMarker + nextKeyMatch
+          let textToInsert = generated + '\n'
+
+          let targetLine = lineAtOffset(current, insertOffset)
+
+          if (nextKeyMatch === -1 && !current.endsWith('\n')) {
+            textToInsert = '\n' + textToInsert
+            targetLine += 1
           }
+
+          insertAtOffset(insertOffset, textToInsert, targetLine)
         }
       }, 150)
     },
@@ -488,7 +394,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
             configActionsRef={configActionsRef}
             onOpenImport={() => openModal('showImportModal')}
             onOpenTemplate={() => openModal('showTemplateModal')}
-            onOpenGeoScan={() => openModal('showGeoScanModal')}
             onOpenBackups={() => openModal('showBackupsModal')}
             onRefreshConfigs={() => loadConfigs(undefined, false, true)}
           />
@@ -515,7 +420,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
       </RouterShell>
       <Toast />
       <ModalManager
-        onSwitchCore={switchCore}
         onInstalled={onInstalled}
         onGenerate={generateConfig}
         onAddToConfig={addToConfig}

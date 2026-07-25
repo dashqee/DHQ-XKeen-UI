@@ -30,7 +30,6 @@ import {
   IconListDetails,
   IconPencil,
   IconRefresh,
-  IconSearch,
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
@@ -38,7 +37,7 @@ import * as jsyaml from 'js-yaml'
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
 import { apiCall, capitalize, clashFetch, getFileLanguage } from '../../lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from '../../lib/loader'
-import { syncClashApiPort, useAppContext, useConnectionsSync, useModalContext, useSettings } from '../../lib/store'
+import { syncClashApiPort, useAppContext, useConnectionsSync, useModalContext } from '../../lib/store'
 import type { Config } from '../../lib/types'
 import { cn } from '../../lib/utils'
 import { parse as parseJsonc } from 'jsonc-parser'
@@ -47,8 +46,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '..
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import type { CodeMirrorRef } from './CodeMirror'
 
-const GuiRouting = lazyLoad(() => import('./xray/GuiRouting'), 'GuiRouting')
-const GuiLog = lazyLoad(() => import('./xray/GuiLog'), 'GuiLog')
 const ConnectionsPanel = lazyLoad(() => import('./mihomo/Connections'), 'ConnectionsPanel')
 const ProvidersModal = lazyLoad(() => import('../modals/Providers'), 'ProvidersModal')
 const BackupsModal = lazyLoad(() => import('../modals/Backups'), 'BackupsModal')
@@ -82,7 +79,6 @@ const TOGGLE_ALL_SELECTORS_EVENT = 'mihomo:toggle-all-selectors'
 interface Props {
   onOpenImport: () => void
   onOpenTemplate: () => void
-  onOpenGeoScan: () => void
   onOpenBackups: () => void
   onRefreshConfigs: () => Promise<Config[]>
   editorRef: React.RefObject<CodeMirrorRef | null>
@@ -272,18 +268,16 @@ function ConfigTab({ config, currentCore, showToast, onRefreshConfigs, withConte
   )
 }
 
-export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpenBackups, onRefreshConfigs, editorRef, configActionsRef }: Props) {
+export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRefreshConfigs, editorRef, configActionsRef }: Props) {
   const { state, dispatch, showToast } = useAppContext({ includeConfigs: true })
   const { configs, isConfigsLoading, currentCore, serviceStatus, clashApiPort, clashApiSecret, clashApiUnix } = state
-  const guiRouting = useSettings((s) => s.guiRouting)
-  const guiLog = useSettings((s) => s.guiLog)
 
   const isRunning = serviceStatus === 'running'
   const isPending = serviceStatus === 'pending'
   const activeClashApiPort = isRunning ? clashApiPort : null
   const activeClashApiUnix = isRunning ? clashApiUnix : null
 
-  useConnectionsSync(currentCore === 'mihomo' ? activeClashApiPort : null, clashApiSecret, serviceStatus, activeClashApiUnix)
+  useConnectionsSync(activeClashApiPort, clashApiSecret, serviceStatus, activeClashApiUnix)
 
   const [activeConfigFile, setActiveConfigFile] = useState<string>(() => localStorage.getItem('lastSelectedTab') ?? '')
   const activeConfigIndex = useMemo(() => {
@@ -292,8 +286,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
     return idx >= 0 ? idx : 0
   }, [configs, activeConfigFile])
   const [validationState, setValidationState] = useState<{ isValid: boolean; error?: string } | null>(null)
-
-  const [isEditorMounted, setIsEditorMounted] = useState(false)
 
   const [activePanel, setActivePanel] = useState<'selectors' | 'connections' | 'config'>('selectors')
   const [mountedPanels, setMountedPanels] = useState<Set<string>>(() => new Set(['selectors']))
@@ -415,7 +407,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
   }, [activeConfigIndex, configFilenamesKey, loadConfigIntoEditor, editorRef])
 
   const handleEditorReady = useCallback(() => {
-    setIsEditorMounted(true)
     const config = configsRef.current[activeIndexRef.current]
     if (config && editorRef.current) loadConfigIntoEditor(config)
   }, [loadConfigIntoEditor, editorRef])
@@ -479,17 +470,12 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
     configActionsRef.current = { switchTab, getActiveIndex: () => activeIndexRef.current }
   }, [configActionsRef, switchTab])
 
-  async function saveCurrentConfig(force = false) {
+  async function saveCurrentConfig() {
     const cfg = configsRef.current[activeIndexRef.current]
     if (!cfg || !editorRef.current) return
     const content = editorRef.current.getValue()
     if (!content.trim()) return showToast('Конфигурация пустая', 'error')
     if (!editorRef.current.isValid(cfg.file)) return showToast('Файл содержит ошибки', 'error')
-    if (!force && isGuiActive(cfg) && hasComments(cfg.savedContent)) {
-      dispatch({ type: 'SET_PENDING_SAVE_ACTION', action: () => saveCurrentConfig(true) })
-      dispatch({ type: 'SHOW_MODAL', modal: 'showCommentsWarningModal', show: true })
-      return
-    }
     const result = await apiCall<{ success: boolean; error?: string }>('PUT', 'configs', { file: cfg.file, content })
     if (result.success) {
       editorRef.current.setSavedContent(content)
@@ -501,27 +487,17 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
     }
   }
 
-  async function saveAndApply(force = false) {
+  async function saveAndApply() {
     const cfg = configsRef.current[activeIndexRef.current]
     if (!cfg || !editorRef.current) return
     const content = editorRef.current.getValue()
     if (!content.trim()) return showToast('Файл пустой', 'error')
     if (!editorRef.current.isValid(cfg.file)) return showToast('Файл содержит ошибки', 'error')
-    if (!force && isGuiActive(cfg) && hasComments(cfg.savedContent)) {
-      dispatch({ type: 'SET_PENDING_SAVE_ACTION', action: () => saveAndApply(true) })
-      dispatch({ type: 'SHOW_MODAL', modal: 'showCommentsWarningModal', show: true })
-      return
-    }
-
     dispatch({ type: 'SET_SERVICE_STATUS', status: 'pending', pendingText: 'Применение...' })
 
     let url = 'configs'
     if (!cfg.file.startsWith('/opt/etc/xkeen')) {
-      if (currentCore === 'mihomo') {
-        url += '?validate=mihomo'
-      } else if (currentCore === 'xray') {
-        url += '?validate=xray'
-      }
+      url += '?validate=mihomo'
     }
 
     const saveResult = await apiCall<{ success: boolean; error?: string }>('PUT', url, { file: cfg.file, content })
@@ -556,46 +532,14 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
     }
   }
 
-  function isGuiActive(cfg: Config) {
-    const f = cfg.file.toLowerCase()
-    return (f.includes('routing') && guiRouting) || (f.includes('log') && guiLog)
-  }
-
-  const fileForGui = activeConfig?.file
-  const contentForGui = activeConfig?.savedContent
-  const isRoutingGui = useMemo(() => {
-    if (!guiRouting || !fileForGui) return false
-    if (!fileForGui.toLowerCase().includes('routing')) return false
-    try {
-      const j = parseJsonc(contentForGui || '')
-      return j && typeof j.routing === 'object'
-    } catch {
-      return false
-    }
-  }, [guiRouting, fileForGui, contentForGui])
-
-  const isLogGui = useMemo(() => {
-    if (!guiLog || !fileForGui) return false
-    if (!fileForGui.toLowerCase().includes('log')) return false
-    try {
-      const j = parseJsonc(contentForGui || '')
-      return j && typeof j.log === 'object'
-    } catch {
-      return false
-    }
-  }, [guiLog, fileForGui, contentForGui])
-
-  const isAnyGui = isRoutingGui || isLogGui
-
   const coreConfigs = configs.filter((c) => !c.file.startsWith('/opt/etc/xkeen'))
   const xkeenConfigs = configs.filter((c) => c.file.startsWith('/opt/etc/xkeen'))
 
-  const isMihomo = currentCore === 'mihomo' && (!!activeClashApiPort || !!activeClashApiUnix)
+  const isMihomo = !!activeClashApiPort || !!activeClashApiUnix
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   const usefulLinks = [
     { title: 'Инструкция XKeen', url: 'https://github.com/Corvus-Malus/XKeen/' },
     { title: 'FAQ XKeen', url: 'https://jameszero.net/faq-xkeen.htm' },
-    { title: 'Документация Xray', url: 'https://xtls.github.io/ru/config' },
     { title: 'Документация Mihomo', url: 'https://wiki.metacubex.one/ru/config/general' },
   ]
 
@@ -731,13 +675,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
           </div>
 
           <div className="relative min-h-175! md:min-h-0 md:flex-1">
-            {isEditorMounted && activeConfig && isRoutingGui && (
-              <GuiRouting editorRef={editorRef} configs={configs} activeConfigIndex={activeConfigIndex} />
-            )}
-            {isEditorMounted && activeConfig && isLogGui && (
-              <GuiLog editorRef={editorRef} configs={configs} activeConfigIndex={activeConfigIndex} />
-            )}
-
             {isMihomo && (
               <>
                 {mountedPanels.has('selectors') && (
@@ -771,7 +708,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
               <div
                 className={cn(
                   'absolute inset-0',
-                  isAnyGui && 'pointer-events-none invisible opacity-0',
                   isMihomo && currentPanel !== 'config' && 'hidden'
                 )}
               >
@@ -852,9 +788,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
                           <DropdownMenuItem onClick={onOpenBackups}>
                             <IconBox /> Бэкапы конфигураций
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={onOpenGeoScan}>
-                            <IconSearch /> Скан геофайлов
-                          </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         {isMobile ? (
@@ -904,10 +837,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenGeoScan, onOpe
       </>
     </TooltipProvider>
   )
-}
-
-function hasComments(content: string) {
-  return /(?<!:)\/\/|\/\*[\s\S]*?\*\//.test(content) || /^\s*#/m.test(content)
 }
 
 function hasCriticalChanges(oldContent: string, newContent: string, language: string): boolean {

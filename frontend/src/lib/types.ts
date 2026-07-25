@@ -14,9 +14,6 @@ export type ProxySortOrder = 'default' | 'name' | 'ping'
 
 export interface AppSettings {
   theme: ThemeMode
-  autoApply: boolean
-  guiRouting: boolean
-  guiLog: boolean
   autoCheckUI: boolean
   autoCheckCore: boolean
   backupCore: boolean
@@ -109,8 +106,6 @@ export interface AppState {
   showImportModal: boolean
   showTemplateModal: boolean
   showSettingsModal: boolean
-  showCommentsWarningModal: boolean
-  showGeoScanModal: boolean
   showBackupsModal: boolean
   updateModalCore: string
   toasts: ToastMessage[]
@@ -144,8 +139,6 @@ export type AppAction =
       | 'showImportModal'
       | 'showTemplateModal'
       | 'showSettingsModal'
-      | 'showCommentsWarningModal'
-      | 'showGeoScanModal'
       | 'showBackupsModal'
     >
     show: boolean

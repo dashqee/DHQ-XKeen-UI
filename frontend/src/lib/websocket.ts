@@ -31,7 +31,6 @@ export interface WsMessage {
 export function useWebSocket(onMessage: WsMessageHandler) {
   const wsRef = useRef<WebSocket | null>(null)
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const currentFileRef = useRef('error.log')
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const connectRef = useRef<() => void>(() => {})
 
@@ -41,7 +40,7 @@ export function useWebSocket(onMessage: WsMessageHandler) {
     }
     if (pingIntervalRef.current) clearInterval(pingIntervalRef.current)
 
-    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws?file=${currentFileRef.current}`)
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
     wsRef.current = ws
 
     ws.onopen = () => {
@@ -90,14 +89,6 @@ export function useWebSocket(onMessage: WsMessageHandler) {
     }
   }, [])
 
-  const switchFile = useCallback(
-    (filename: string) => {
-      currentFileRef.current = filename
-      send({ type: 'switchFile', file: filename })
-    },
-    [send]
-  )
-
   const applyFilter = useCallback(
     (filter: string) => {
       if (!filter.trim()) {
@@ -112,5 +103,5 @@ export function useWebSocket(onMessage: WsMessageHandler) {
   const clearLog = useCallback(() => send({ type: 'clear' }), [send])
   const reload = useCallback((filter?: string) => send({ type: 'reload', query: filter ?? '' }), [send])
 
-  return { switchFile, applyFilter, clearLog, reload }
+  return { applyFilter, clearLog, reload }
 }

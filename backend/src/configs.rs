@@ -27,7 +27,7 @@ pub struct RenameReq {
     new_file: String,
 }
 
-async fn collect_configs(paths: &[String], is_mihomo: bool) -> Vec<ConfigItem> {
+async fn collect_configs(paths: &[String]) -> Vec<ConfigItem> {
     let mut results = Vec::new();
     for path_str in paths {
         let path = Path::new(path_str);
@@ -39,11 +39,7 @@ async fn collect_configs(paths: &[String], is_mihomo: bool) -> Vec<ConfigItem> {
                 Ok(mut entries) => {
                     while let Ok(Some(entry)) = entries.next_entry().await {
                         let entry_path = entry.path();
-                        let matches = if is_mihomo {
-                            entry_path.extension().map_or(false, |e| e == "yaml" || e == "yml")
-                        } else {
-                            entry_path.extension().map_or(false, |e| e == "json")
-                        };
+                        let matches = entry_path.extension().map_or(false, |e| e == "yaml" || e == "yml");
                         if matches {
                             match tokio::fs::read_to_string(&entry_path).await {
                                 Ok(content) => results.push(ConfigItem {
@@ -83,30 +79,18 @@ async fn collect_configs(paths: &[String], is_mihomo: bool) -> Vec<ConfigItem> {
 pub async fn get_configs(
     State(state): State<AppState>, Query(parameters): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let target_core = parameters
-        .get("core")
-        .cloned()
-        .unwrap_or_else(|| state.core.read().unwrap().name.clone());
-    let is_mihomo = target_core == "mihomo";
+    if parameters.get("core").is_some_and(|core| core != "mihomo") {
+        return Json(serde_json::json!({ "success": false, "error": "Поддерживается только ядро Mihomo" }));
+    }
 
     let core_paths = {
         let settings = state.settings.read().unwrap();
-        let default_path = if is_mihomo {
-            MIHOMO_CONF_DIR.to_string()
-        } else {
-            XRAY_CONF_DIR.to_string()
-        };
-        let mut paths = vec![default_path];
-        let extra = if is_mihomo {
-            settings.append_config_paths.mihomo.clone()
-        } else {
-            settings.append_config_paths.xray.clone()
-        };
-        paths.extend(extra);
+        let mut paths = vec![MIHOMO_CONF_DIR.to_string()];
+        paths.extend(settings.append_config_paths.mihomo.clone());
         paths
     };
 
-    let mut core_configs = collect_configs(&core_paths, is_mihomo).await;
+    let mut core_configs = collect_configs(&core_paths).await;
     let mut lst_configs = Vec::new();
 
     if let Ok(mut entries) = tokio::fs::read_dir(XKEEN_CONF_DIR).await {
@@ -135,19 +119,8 @@ fn get_allowed_prefixes(state: &AppState, is_lst: bool) -> Vec<String> {
         return vec![XKEEN_CONF_DIR.to_string()];
     }
     let settings = state.settings.read().unwrap();
-    let core = state.core.read().unwrap();
-    let default_path = if core.name == "mihomo" {
-        MIHOMO_CONF_DIR.to_string()
-    } else {
-        XRAY_CONF_DIR.to_string()
-    };
-    let extra = if core.name == "mihomo" {
-        settings.append_config_paths.mihomo.clone()
-    } else {
-        settings.append_config_paths.xray.clone()
-    };
-    let mut paths = vec![default_path];
-    paths.extend(extra);
+    let mut paths = vec![MIHOMO_CONF_DIR.to_string()];
+    paths.extend(settings.append_config_paths.mihomo.clone());
     paths
 }
 
@@ -196,43 +169,17 @@ pub async fn put_config(
 
     if let Some(core_type) = params.get("validate") {
         let mut validate_files = Vec::new();
-        if core_type == "mihomo" {
-            validate_files.push(ConfigReq {
-                file: req.file.clone(),
-                content: content.clone(),
+        if core_type != "mihomo" {
+            return Json(ApiResponse::<()> {
+                success: false,
+                error: Some("Поддерживается только ядро Mihomo".into()),
+                data: None,
             });
-        } else if core_type == "xray" {
-            if let Ok(mut entries) = tokio::fs::read_dir(XRAY_CONF_DIR).await {
-                let mut found_current = false;
-                while let Ok(Some(entry)) = entries.next_entry().await {
-                    let path = entry.path();
-                    if path.extension().map_or(false, |e| e == "json") {
-                        let path_str = path.to_string_lossy().into_owned();
-                        let file_content = if path_str == req.file {
-                            found_current = true;
-                            content.clone()
-                        } else {
-                            tokio::fs::read_to_string(&path).await.unwrap_or_default()
-                        };
-                        validate_files.push(ConfigReq {
-                            file: path_str,
-                            content: file_content,
-                        });
-                    }
-                }
-                if !found_current {
-                    validate_files.push(ConfigReq {
-                        file: req.file.clone(),
-                        content: content.clone(),
-                    });
-                }
-            } else {
-                validate_files.push(ConfigReq {
-                    file: req.file.clone(),
-                    content: content.clone(),
-                });
-            }
         }
+        validate_files.push(ConfigReq {
+            file: req.file.clone(),
+            content: content.clone(),
+        });
 
         if let Err(err_msg) = validate_core(core_type, &validate_files).await {
             log("ERROR", err_msg);
@@ -354,6 +301,9 @@ pub async fn patch_config(State(state): State<AppState>, Json(req): Json<RenameR
 }
 
 async fn validate_core(core: &str, files: &[ConfigReq]) -> Result<(), String> {
+    if core != "mihomo" {
+        return Err("Поддерживается только ядро Mihomo".into());
+    }
     let temp_dir = std::env::temp_dir().join(format!(
         "xkeen-validate-{}-{}",
         std::process::id(),
@@ -374,20 +324,9 @@ async fn validate_core(core: &str, files: &[ConfigReq]) -> Result<(), String> {
         }
     }
 
-    let mut command = match core {
-        "mihomo" => {
-            let mut cmd = tokio::process::Command::new("mihomo");
-            cmd.args(["-t", "-f"]).arg(temp_dir.join("config.yaml"));
-            cmd.env("CLASH_HOME_DIR", MIHOMO_CONF_DIR);
-            cmd
-        }
-        _ => {
-            let mut cmd = tokio::process::Command::new("xray");
-            cmd.args(["-test", "-confdir"]).arg(&temp_dir);
-            cmd.env("XRAY_LOCATION_ASSET", XRAY_ASSET_DIR);
-            cmd
-        }
-    };
+    let mut command = tokio::process::Command::new("mihomo");
+    command.args(["-t", "-f"]).arg(temp_dir.join("config.yaml"));
+    command.env("CLASH_HOME_DIR", MIHOMO_CONF_DIR);
 
     let output = command.output().await;
     _ = tokio::fs::remove_dir_all(&temp_dir).await;

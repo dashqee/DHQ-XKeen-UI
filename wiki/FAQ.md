@@ -41,8 +41,6 @@ chmod +x /opt/sbin/xkeen-ui && xkeen-ui create-init && xkeen-ui start
 
 Перейдите в **Утилиты → Добавить прокси**, вставьте HTTPS-ссылку и нажмите «Добавить». HWID-хедер сгенерируется автоматически.
 
-Также можно воспользоваться [веб-генератором](https://zxc-rv.github.io/XKeen-UI/Outbound_Generator/).
-
 </details>
 
 ---
