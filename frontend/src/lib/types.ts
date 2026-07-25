@@ -101,7 +101,6 @@ export interface AppState {
   connections: Connection[]
   wsConnected: boolean
   showDirtyModal: boolean
-  showCoreManageModal: boolean
   showUpdateModal: boolean
   showImportModal: boolean
   showTemplateModal: boolean
@@ -134,7 +133,6 @@ export type AppAction =
     modal: keyof Pick<
       AppState,
       | 'showDirtyModal'
-      | 'showCoreManageModal'
       | 'showUpdateModal'
       | 'showImportModal'
       | 'showTemplateModal'

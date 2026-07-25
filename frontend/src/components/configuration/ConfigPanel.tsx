@@ -11,15 +11,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   IconBox,
   IconCheck,
-  IconChevronDown,
-  IconChevronUp,
   IconCode,
   IconDeviceFloppy,
   IconDotsFilled,
@@ -35,9 +32,9 @@ import {
 } from '@tabler/icons-react'
 import * as jsyaml from 'js-yaml'
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
-import { apiCall, capitalize, clashFetch, getFileLanguage } from '../../lib/api'
+import { apiCall, capitalize, getFileLanguage } from '../../lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from '../../lib/loader'
-import { syncClashApiPort, useAppContext, useConnectionsSync, useModalContext } from '../../lib/store'
+import { syncClashApiPort, useAppContext, useModalContext } from '../../lib/store'
 import type { Config } from '../../lib/types'
 import { cn } from '../../lib/utils'
 import { parse as parseJsonc } from 'jsonc-parser'
@@ -46,10 +43,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '..
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import type { CodeMirrorRef } from './CodeMirror'
 
-const ConnectionsPanel = lazyLoad(() => import('./mihomo/Connections'), 'ConnectionsPanel')
 const ProvidersModal = lazyLoad(() => import('../modals/Providers'), 'ProvidersModal')
 const BackupsModal = lazyLoad(() => import('../modals/Backups'), 'BackupsModal')
-const SelectorsPanel = lazyLoad(() => import('./mihomo/Selectors'), 'SelectorsPanel')
 const CodeMirrorEditorLazy = lazyLoad(() => import('./CodeMirror'), 'CodeMirrorEditor')
 
 const BackupsModalContainer = memo(function BackupsModalContainer({
@@ -71,10 +66,7 @@ const BackupsModalContainer = memo(function BackupsModalContainer({
   )
 })
 
-type ClashMode = 'rule' | 'global' | 'direct'
 type ProvidersModalKind = 'rules' | 'proxies'
-
-const TOGGLE_ALL_SELECTORS_EVENT = 'mihomo:toggle-all-selectors'
 
 interface Props {
   onOpenImport: () => void
@@ -277,8 +269,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
   const activeClashApiPort = isRunning ? clashApiPort : null
   const activeClashApiUnix = isRunning ? clashApiUnix : null
 
-  useConnectionsSync(activeClashApiPort, clashApiSecret, serviceStatus, activeClashApiUnix)
-
   const [activeConfigFile, setActiveConfigFile] = useState<string>(() => localStorage.getItem('lastSelectedTab') ?? '')
   const activeConfigIndex = useMemo(() => {
     if (!configs.length) return 0
@@ -287,14 +277,9 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
   }, [configs, activeConfigFile])
   const [validationState, setValidationState] = useState<{ isValid: boolean; error?: string } | null>(null)
 
-  const [activePanel, setActivePanel] = useState<'selectors' | 'connections' | 'config'>('selectors')
-  const [mountedPanels, setMountedPanels] = useState<Set<string>>(() => new Set(['selectors']))
-  const [mode, setMode] = useState<ClashMode>('rule')
-  const [allSelectorsCollapsed, setAllSelectorsCollapsed] = useState(false)
   const [providersModalKind, setProvidersModalKind] = useState<ProvidersModalKind | null>(null)
   const [isProvidersModalOpen, setIsProvidersModalOpen] = useState(false)
   const mountProvidersModal = useLazyMount(isProvidersModalOpen)
-  const currentPanel = isRunning ? activePanel : 'config'
 
   const configsRef = useRef(configs)
   const activeIndexRef = useRef(activeConfigIndex)
@@ -335,38 +320,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
   }, [saveViewState])
 
   const configFilenamesKey = configs.map((c) => c.file).join(',')
-
-  useEffect(() => {
-    if (currentCore !== 'mihomo' || (!activeClashApiPort && !activeClashApiUnix)) return
-    let cancelled = false
-    const timer = setTimeout(() => {
-      if (cancelled) return
-      clashFetch<{ mode?: ClashMode }>(activeClashApiPort ?? '', 'configs', { secret: clashApiSecret, unix: activeClashApiUnix })
-        .then((data) => {
-          if (data.mode) setMode(data.mode)
-        })
-        .catch(() => { })
-    }, 200)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [currentCore, activeClashApiPort, clashApiSecret, activeClashApiUnix])
-
-  const changeMode = useCallback(
-    async (newMode: ClashMode) => {
-      if (newMode === mode || (!activeClashApiPort && !activeClashApiUnix)) return
-      setMode(newMode)
-      await clashFetch(activeClashApiPort ?? '', 'configs', {
-        method: 'PATCH',
-        secret: clashApiSecret,
-        unix: activeClashApiUnix,
-        body: { mode: newMode },
-      })
-      await clashFetch(activeClashApiPort ?? '', 'connections', { method: 'DELETE', secret: clashApiSecret, unix: activeClashApiUnix })
-    },
-    [activeClashApiPort, clashApiSecret, activeClashApiUnix, mode]
-  )
 
   const activeConfig = configs[activeConfigIndex]
   const fileLanguage = activeConfig ? getFileLanguage(activeConfig.file) : null
@@ -535,7 +488,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
   const coreConfigs = configs.filter((c) => !c.file.startsWith('/opt/etc/xkeen'))
   const xkeenConfigs = configs.filter((c) => c.file.startsWith('/opt/etc/xkeen'))
 
-  const isMihomo = !!activeClashApiPort || !!activeClashApiUnix
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   const usefulLinks = [
     { title: 'Инструкция XKeen', url: 'https://github.com/Corvus-Malus/XKeen/' },
@@ -549,168 +501,60 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
         <div className="border-border bg-card flex flex-col overflow-hidden rounded-xl border md:min-h-0 md:flex-1">
           <div className={cn('flex shrink-0 flex-col gap-2 px-3 pt-3 sm:px-4 sm:pt-4 md:flex-row md:items-start')}>
             <div className="flex min-w-0 shrink-0 items-center gap-2">
-              {isMihomo ? (
-                <div className="min-w-0 scrollbar-none overflow-x-auto md:overflow-x-visible [&::-webkit-scrollbar]:hidden">
-                  <Tabs
-                    value={currentPanel}
-                    onValueChange={(value) => {
-                      const panel = value as 'config' | 'selectors' | 'connections'
-                      setActivePanel(panel)
-                      setMountedPanels((prev) => (prev.has(panel) ? prev : new Set([...prev, panel])))
-                    }}
-                    className="w-max flex-row!"
-                  >
-                    <TabsList variant="line" className="mb-2 w-max shrink-0 gap-3 p-0 whitespace-nowrap md:mb-0">
-                      <TabsTrigger value="selectors" className="p-0 text-sm font-semibold md:text-lg" disabled={!isRunning}>
-                        Селекторы
-                      </TabsTrigger>
-                      <TabsTrigger value="connections" className="p-0 text-sm font-semibold md:text-lg" disabled={!isRunning}>
-                        Соединения
-                      </TabsTrigger>
-                      <TabsTrigger value="config" className="p-0 text-sm font-semibold md:text-lg">
-                        Конфигурация
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              ) : (
-                <h2 className="shrink-0 text-lg font-semibold select-none">Конфигурация</h2>
-              )}
+              <h2 className="shrink-0 text-lg font-semibold select-none">Конфигурация</h2>
             </div>
 
-            {isMihomo && currentPanel === 'connections' && (
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">Режим маршрутизации</span>
-                <Select value={mode} items={{ direct: 'DIRECT', rule: 'RULE', global: 'GLOBAL' }} onValueChange={(value) => changeMode(value as ClashMode)}>
-                  <SelectTrigger className="w-30">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="direct">DIRECT</SelectItem>
-                      <SelectItem value="rule">RULE</SelectItem>
-                      <SelectItem value="global">GLOBAL</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {isMihomo && currentPanel === 'selectors' && (
-              <div className="ml-auto flex items-center gap-1.5">
-                <Button variant="outline" className="text-[13px]" onClick={() => openProvidersModal('rules')}>
-                  <IconListDetails data-icon="inline-start" />
-                  Пров. правил
-                </Button>
-                <Button variant="outline" className="text-[13px]" onClick={() => openProvidersModal('proxies')}>
-                  <IconListDetails data-icon="inline-start" />
-                  Пров. прокси
-                </Button>
-                <Tooltip>
-                  <TooltipTrigger render={
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label={allSelectorsCollapsed ? 'Развернуть все селекторы' : 'Свернуть все селекторы'}
-                      onClick={() =>
-                        window.dispatchEvent(new CustomEvent(TOGGLE_ALL_SELECTORS_EVENT, { detail: { collapsed: !allSelectorsCollapsed } }))
-                      }
-                    >
-                      {allSelectorsCollapsed ? <IconChevronDown /> : <IconChevronUp />}
-                    </Button>
-                  } />
-                  <TooltipContent>{allSelectorsCollapsed ? 'Развернуть все' : 'Свернуть все'}</TooltipContent>
-                </Tooltip>
-              </div>
-            )}
-
-            {(!isMihomo || currentPanel === 'config') && (
-              <div className="scrollbar-none overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] md:ml-auto [&::-webkit-scrollbar]:hidden">
-                {isConfigsLoading ? (
-                  <div className="flex gap-2">
-                    {[525, 310].map((w) => (
-                      <Skeleton key={w} className="h-9 gap-0.5 rounded-lg p-0.75" style={{ width: w }} />
-                    ))}
-                  </div>
-                ) : (
-                  <Tabs
-                    value={activeConfig?.file || ''}
-                    onValueChange={(value) => {
-                      const index = configs.findIndex((c) => c.file === value)
-                      if (index >= 0) switchTab(index)
-                    }}
-                    className="flex-row!"
-                  >
-                    {coreConfigs.length > 0 && (
-                      <TabsList className="shrink-0">
-                        {coreConfigs.map((config) => (
-                          <ConfigTab
-                            key={config.file}
-                            config={config}
-                            currentCore={currentCore}
-                            showToast={showToast}
-                            onRefreshConfigs={refreshConfigsAndEditor}
-                            withContextMenu
-                          />
-                        ))}
-                      </TabsList>
-                    )}
-                    {xkeenConfigs.length > 0 && (
-                      <TabsList className="shrink-0">
-                        {xkeenConfigs.map((config) => (
-                          <ConfigTab
-                            key={config.file}
-                            config={config}
-                            currentCore={currentCore}
-                            showToast={showToast}
-                            onRefreshConfigs={refreshConfigsAndEditor}
-                          />
-                        ))}
-                      </TabsList>
-                    )}
-                  </Tabs>
-                )}
-              </div>
-            )}
+            <div className="scrollbar-none overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] md:ml-auto [&::-webkit-scrollbar]:hidden">
+              {isConfigsLoading ? (
+                <div className="flex gap-2">
+                  {[525, 310].map((w) => (
+                    <Skeleton key={w} className="h-9 gap-0.5 rounded-lg p-0.75" style={{ width: w }} />
+                  ))}
+                </div>
+              ) : (
+                <Tabs
+                  value={activeConfig?.file || ''}
+                  onValueChange={(value) => {
+                    const index = configs.findIndex((c) => c.file === value)
+                    if (index >= 0) switchTab(index)
+                  }}
+                  className="flex-row!"
+                >
+                  {coreConfigs.length > 0 && (
+                    <TabsList className="shrink-0">
+                      {coreConfigs.map((config) => (
+                        <ConfigTab
+                          key={config.file}
+                          config={config}
+                          currentCore={currentCore}
+                          showToast={showToast}
+                          onRefreshConfigs={refreshConfigsAndEditor}
+                          withContextMenu
+                        />
+                      ))}
+                    </TabsList>
+                  )}
+                  {xkeenConfigs.length > 0 && (
+                    <TabsList className="shrink-0">
+                      {xkeenConfigs.map((config) => (
+                        <ConfigTab
+                          key={config.file}
+                          config={config}
+                          currentCore={currentCore}
+                          showToast={showToast}
+                          onRefreshConfigs={refreshConfigsAndEditor}
+                        />
+                      ))}
+                    </TabsList>
+                  )}
+                </Tabs>
+              )}
+            </div>
           </div>
 
           <div className="relative min-h-175! md:min-h-0 md:flex-1">
-            {isMihomo && (
-              <>
-                {mountedPanels.has('selectors') && (
-                  <div className={cn(currentPanel !== 'selectors' && 'hidden')}>
-                    <LazyBoundary>
-                      <SelectorsPanel
-                        clashApiPort={(activeClashApiPort ?? '') as string}
-                        mode={mode}
-                        clashApiSecret={clashApiSecret ?? null}
-                        clashApiUnix={activeClashApiUnix ?? null}
-                        onCollapsedStateChange={setAllSelectorsCollapsed}
-                      />
-                    </LazyBoundary>
-                  </div>
-                )}
-                {mountedPanels.has('connections') && (
-                  <div className={cn(currentPanel !== 'connections' && 'hidden')}>
-                    <LazyBoundary>
-                      <ConnectionsPanel
-                        clashApiPort={(activeClashApiPort ?? '') as string}
-                        clashApiSecret={clashApiSecret ?? null}
-                        clashApiUnix={activeClashApiUnix ?? null}
-                      />
-                    </LazyBoundary>
-                  </div>
-                )}
-              </>
-            )}
-
-            {!isConfigsLoading && (!isMihomo || mountedPanels.has('config')) && (
-              <div
-                className={cn(
-                  'absolute inset-0',
-                  isMihomo && currentPanel !== 'config' && 'hidden'
-                )}
-              >
+            {!isConfigsLoading && (
+              <div className="absolute inset-0">
                 <CodeMirrorEditorLazy
                   ref={editorRef}
                   onContentChange={handleContentChange}
@@ -722,8 +566,7 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
             )}
           </div>
 
-          {(!isMihomo || currentPanel === 'config') && (
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-1.5 px-3 pb-3 sm:px-4 sm:pb-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-1.5 px-3 pb-3 sm:px-4 sm:pb-4">
               <div className="min-w-0 text-xs">
                 {isConfigsLoading ? (
                   <Skeleton className="h-4 w-30" />
@@ -788,6 +631,18 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
                           <DropdownMenuItem onClick={onOpenBackups}>
                             <IconBox /> Бэкапы конфигураций
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!activeClashApiPort && !activeClashApiUnix}
+                            onClick={() => openProvidersModal('rules')}
+                          >
+                            <IconListDetails /> Провайдеры правил
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!activeClashApiPort && !activeClashApiUnix}
+                            onClick={() => openProvidersModal('proxies')}
+                          >
+                            <IconListDetails /> Провайдеры прокси
+                          </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         {isMobile ? (
@@ -819,7 +674,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
                 )}
               </div>
             </div>
-          )}
         </div>
         {providersModalKind && mountProvidersModal && (
           <LazyBoundary>

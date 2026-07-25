@@ -50,7 +50,6 @@ interface Props {
   mode: ClashMode
   clashApiSecret: string | null
   clashApiUnix?: string | null
-  onCollapsedStateChange?: (collapsed: boolean) => void
 }
 
 const NO_DELAY_TYPES = new Set(['reject', 'reject-drop', 'dns', 'pass', 'relay'])
@@ -58,7 +57,6 @@ const SELECTOR_TYPES = new Set(['Selector', 'Fallback', 'URLTest', 'LoadBalance'
 const AUTO_POLICY_TYPES = new Set(['Fallback', 'URLTest', 'LoadBalance'])
 const COLLAPSE_SELECTORS_KEY = 'collapseSelectors'
 const NO_SORT_TYPES = new Set(['Dns', 'Compatible', 'Direct', 'Reject', 'RejectDrop', 'Pass', 'Fallback', 'URLTest', 'LoadBalance', 'Selector'])
-const TOGGLE_ALL_SELECTORS_EVENT = 'mihomo:toggle-all-selectors'
 
 interface SelectorsStore {
   testingAll: Record<string, boolean>
@@ -711,7 +709,7 @@ const SelectorRow = memo(function SelectorRow({
 })
 
 /* ====================== ОСНОВНОЙ КОМПОНЕНТ ====================== */
-export function SelectorsPanel({ clashApiPort, mode, clashApiSecret, clashApiUnix, onCollapsedStateChange }: Props) {
+export function SelectorsPanel({ clashApiPort, mode, clashApiSecret, clashApiUnix }: Props) {
   const loading = useProxiesStore((s) => s.loading)
   const error = useProxiesStore((s) => s.error)
   const pingTestUrl = useSettings((s) => s.pingTestUrl)
@@ -799,26 +797,6 @@ export function SelectorsPanel({ clashApiPort, mode, clashApiSecret, clashApiUni
   useEffect(() => {
     localStorage.setItem(COLLAPSE_SELECTORS_KEY, JSON.stringify(persistedCollapsedSelectors))
   }, [persistedCollapsedSelectors])
-
-  useEffect(() => {
-    onCollapsedStateChange?.(selectorNames.length > 0 && selectorNames.every((name) => persistedCollapsedSelectors[name]))
-  }, [onCollapsedStateChange, persistedCollapsedSelectors, selectorNames])
-
-  useEffect(() => {
-    function handleToggleAll(event: Event) {
-      const collapsed = (event as CustomEvent<{ collapsed?: boolean }>).detail?.collapsed
-      if (typeof collapsed !== 'boolean') return
-      blurActiveElement()
-      setCollapsedSelectors((prev) => {
-        const next = { ...prev }
-        for (const name of selectorNames) next[name] = collapsed
-        return next
-      })
-    }
-
-    window.addEventListener(TOGGLE_ALL_SELECTORS_EVENT, handleToggleAll as EventListener)
-    return () => window.removeEventListener(TOGGLE_ALL_SELECTORS_EVENT, handleToggleAll as EventListener)
-  }, [selectorNames])
 
   const testSingle = useCallback(
     async (proxyName: string) => {

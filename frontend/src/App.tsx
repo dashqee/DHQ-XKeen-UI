@@ -5,8 +5,6 @@ import type { CodeMirrorRef } from './components/configuration/CodeMirror'
 import { ConfigPanel } from './components/configuration/ConfigPanel'
 import { DevicesView, DiagnosticsView, RouterDashboard, RoutingView } from './components/dashboard/RouterViews'
 import { RouterShell, type ShellNavigationItem } from './components/layout/RouterShell'
-import { LogPanel } from './components/log/LogPanel'
-import { StatusBar } from './components/status/StatusBar'
 import { Toast } from './components/ui/toast'
 import { apiCall } from './lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from './lib/loader'
@@ -23,7 +21,6 @@ import { applyTheme, THEME_MEDIA_QUERY } from './lib/theme'
 import { DEFAULT_PING_TEST_TIMEOUT, DEFAULT_PING_TEST_URL, type Config, type ThemeMode } from './lib/types'
 import { parseClashApiCredentials } from './lib/utils'
 
-const CoreManageModal = lazyLoad(() => import('./components/modals/CoreManagement'), 'CoreManageModal')
 const UpdateModal = lazyLoad(() => import('./components/modals/Update'), 'UpdateModal')
 const ImportModal = lazyLoad(() => import('./components/modals/AddProxy'), 'ImportModal')
 const TemplateModal = lazyLoad(() => import('./components/modals/Templates'), 'TemplateModal')
@@ -47,7 +44,6 @@ interface ModalManagerProps {
   onGenerate: (uri: string) => { content: string; type: string } | null
   onAddToConfig: (content: string, type: string, position: 'start' | 'end') => void
   onImportTemplate: (url: string) => Promise<void>
-  openModal: (modal: string) => void
 }
 
 const ModalManager = memo(function ModalManager({
@@ -55,11 +51,9 @@ const ModalManager = memo(function ModalManager({
   onGenerate,
   onAddToConfig,
   onImportTemplate,
-  openModal,
 }: ModalManagerProps) {
-  const { modals, dispatch } = useModalContext()
+  const { modals } = useModalContext()
 
-  const mountCoreManage = useLazyMount(modals.showCoreManageModal)
   const mountUpdate = useLazyMount(modals.showUpdateModal)
   const mountImport = useLazyMount(modals.showImportModal)
   const mountTemplate = useLazyMount(modals.showTemplateModal)
@@ -67,16 +61,6 @@ const ModalManager = memo(function ModalManager({
 
   return (
     <>
-      {mountCoreManage && (
-        <LazyBoundary>
-          <CoreManageModal
-            onOpenUpdate={(core: string) => {
-              dispatch({ type: 'SET_UPDATE_MODAL_CORE', core })
-              openModal('showUpdateModal')
-            }}
-          />
-        </LazyBoundary>
-      )}
       {mountUpdate && (
         <LazyBoundary>
           <UpdateModal onInstalled={onInstalled} />
@@ -351,7 +335,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
   )
 
   useConnectionsSync(
-    activeSection !== 'advanced' && state.currentCore === 'mihomo' ? state.clashApiPort : null,
+    activeSection !== 'configuration' && state.currentCore === 'mihomo' ? state.clashApiPort : null,
     state.clashApiSecret,
     state.serviceStatus,
     state.clashApiUnix
@@ -361,6 +345,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
     { id: 'home', label: 'Главная', description: 'Состояние защиты' },
     { id: 'routing', label: 'Маршрутизация', description: 'Текущий маршрут' },
     { id: 'devices', label: 'Устройства', description: 'Активные соединения' },
+    { id: 'configuration', label: 'Конфигурация', description: 'Настройки Mihomo' },
     { id: 'diagnostics', label: 'Диагностика', description: 'Проверки и журнал' },
   ]
 
@@ -368,27 +353,26 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
     home: 'Главная',
     routing: 'Маршрутизация',
     devices: 'Устройства',
+    configuration: 'Конфигурация',
     diagnostics: 'Диагностика',
-    advanced: 'Расширенный режим',
   }
 
   const renderSection = () => {
     if (activeSection === 'routing') return <RoutingView />
     if (activeSection === 'devices') return <DevicesView />
-    if (activeSection === 'diagnostics') return <DiagnosticsView />
-    if (activeSection === 'advanced') {
+    if (activeSection === 'diagnostics') {
       return (
-        <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-3">
-          <StatusBar
-            onOpenCoreManage={() => openModal('showCoreManageModal')}
-            onOpenSettings={() => openModal('showSettingsModal')}
-            onRefreshStatus={() => void checkStatus()}
-            onOpenUpdate={(core: string) => {
-              dispatch({ type: 'SET_UPDATE_MODAL_CORE', core })
-              openModal('showUpdateModal')
-            }}
-            onLogout={logout}
-          />
+        <DiagnosticsView
+          onOpenUpdate={(target) => {
+            dispatch({ type: 'SET_UPDATE_MODAL_CORE', core: target })
+            openModal('showUpdateModal')
+          }}
+        />
+      )
+    }
+    if (activeSection === 'configuration') {
+      return (
+        <div className="flex min-h-[calc(100dvh-10rem)] flex-col">
           <ConfigPanel
             editorRef={editorRef}
             configActionsRef={configActionsRef}
@@ -397,7 +381,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
             onOpenBackups={() => openModal('showBackupsModal')}
             onRefreshConfigs={() => loadConfigs(undefined, false, true)}
           />
-          <LogPanel />
         </div>
       )
     }
@@ -410,7 +393,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         activeItem={activeSection}
         onNavigate={setActiveSection}
         navigation={navigation}
-        secondaryNavigation={[{ id: 'advanced', label: 'Расширенный режим', description: 'Конфиги, ядра и бэкапы' }]}
         title={sectionTitles[activeSection] ?? 'DHQClash Router'}
         status={state.serviceStatus === 'running' ? 'running' : state.serviceStatus === 'pending' || state.serviceStatus === 'loading' ? 'pending' : 'stopped'}
         onOpenSettings={() => openModal('showSettingsModal')}
@@ -424,7 +406,6 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         onGenerate={generateConfig}
         onAddToConfig={addToConfig}
         onImportTemplate={importTemplate}
-        openModal={openModal}
       />
     </>
   )

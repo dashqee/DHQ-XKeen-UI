@@ -51,7 +51,6 @@ const initialState: AppState = {
   connections: [],
   wsConnected: false,
   showDirtyModal: false,
-  showCoreManageModal: false,
   showUpdateModal: false,
   showImportModal: false,
   showTemplateModal: false,
@@ -138,7 +137,6 @@ type ShowToastFn = (message: string | { title: string; body: string; persistent?
 type CoreState = Omit<
   AppState,
   | 'showDirtyModal'
-  | 'showCoreManageModal'
   | 'showUpdateModal'
   | 'showImportModal'
   | 'showTemplateModal'
@@ -156,7 +154,6 @@ type CoreState = Omit<
 type ModalState = Pick<
   AppState,
   | 'showDirtyModal'
-  | 'showCoreManageModal'
   | 'showUpdateModal'
   | 'showImportModal'
   | 'showTemplateModal'
@@ -251,7 +248,6 @@ export function useModalContext() {
     useShallow(
       (s): ModalState => ({
         showDirtyModal: s.showDirtyModal,
-        showCoreManageModal: s.showCoreManageModal,
         showUpdateModal: s.showUpdateModal,
         showImportModal: s.showImportModal,
         showTemplateModal: s.showTemplateModal,
