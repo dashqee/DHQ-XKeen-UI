@@ -210,10 +210,6 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
           <i />
           <span><IconWorld /> Интернет</span>
         </div>
-        <Button variant="ghost" className="px-0 text-[var(--dhq-cyan)] hover:bg-transparent" onClick={onOpenRouting}>
-          Открыть маршрутизацию
-          <IconRoute data-icon="inline-end" />
-        </Button>
       </section>
 
       <section className="dhq-metrics-grid">
