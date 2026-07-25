@@ -284,6 +284,7 @@ export function useSettings<T>(selector: (settings: AppSettings) => T): T {
 
 export const useToasts = () => useStore((s) => s.toasts)
 export const useWsConnected = () => useStore((s) => s.wsConnected)
+export const useConnections = () => useStore((s) => s.connections)
 export const getConnections = (): Connection[] => useStore.getState().connections
 
 export function subscribeConnections(callback: (connections: Connection[]) => void): () => void {

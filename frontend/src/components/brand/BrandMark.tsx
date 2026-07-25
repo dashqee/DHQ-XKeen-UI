@@ -1,0 +1,36 @@
+import { useId } from 'react'
+
+export function BrandMark({ className = '' }: { className?: string }) {
+  const id = useId().replace(/:/g, '')
+  const backgroundId = `${id}-background`
+  const ringId = `${id}-ring`
+  const routeId = `${id}-route`
+
+  return (
+    <svg className={className} viewBox="0 0 1024 1024" role="img" aria-label="DHQClash">
+      <defs>
+        <linearGradient id={backgroundId} x1="128" y1="64" x2="896" y2="960" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#171347" />
+          <stop offset="1" stopColor="#08091f" />
+        </linearGradient>
+        <linearGradient id={ringId} x1="250" y1="730" x2="770" y2="250" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7437f5" />
+          <stop offset=".48" stopColor="#4877f4" />
+          <stop offset="1" stopColor="#42e5e8" />
+        </linearGradient>
+        <linearGradient id={routeId} x1="250" y1="780" x2="812" y2="355" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7028ef" />
+          <stop offset=".55" stopColor="#4c79f5" />
+          <stop offset="1" stopColor="#42e5e8" />
+        </linearGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="224" fill={`url(#${backgroundId})`} />
+      <rect x="18" y="18" width="988" height="988" rx="210" fill="none" stroke="#35316e" strokeWidth="4" />
+      <path d="M744 256A318 318 0 1 0 760 738" fill="none" stroke={`url(#${ringId})`} strokeWidth="112" strokeLinecap="round" />
+      <path d="M249 488H492V564H249C264 540 264 512 249 488Z" fill="#5047d6" opacity=".72" />
+      <path d="M250 780C351 766 441 670 536 548C625 434 704 387 786 366C687 428 610 510 526 616C430 738 333 808 250 780Z" fill={`url(#${routeId})`} />
+      <path d="M250 780C302 811 347 804 397 771C352 786 313 780 283 755Z" fill="#7a33f2" />
+      <circle cx="812" cy="355" r="49" fill="#c7ff3d" />
+    </svg>
+  )
+}

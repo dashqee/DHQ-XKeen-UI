@@ -10,7 +10,7 @@ body:
           required: true
         - label: Проблема не связана с работой XKeen
           required: true
-        - label: Проблема связана исключительно с панелью XKeen UI
+        - label: Проблема связана исключительно с панелью DHQClash Router
           required: true
         - label: С FAQ ознакомлен(а) и решение по проблеме там отсутствует
           required: true

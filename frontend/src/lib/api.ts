@@ -1,5 +1,6 @@
 const RETRY_DELAYS = [500, 1000, 2000, 4000, 8000]
 const RETRY_STATUSES = new Set([502, 503, 504])
+export const IS_EXTERNAL_UI = import.meta.env.VITE_APP_MODE === 'external'
 
 function extractClashErrorMessage(bodyText: string): string {
   const trimmed = bodyText.trim()
@@ -33,9 +34,13 @@ export async function clashFetch<T = unknown>(
   const normalizedPath = path.replace(/^\/+/, '')
 
   const headers: Record<string, string> = {}
-  if (!unix && port) headers['X-Clash-Port'] = port
-  if (!unix && secret) headers['X-Clash-Secret'] = secret
-  if (unix) headers['X-Clash-Unix'] = unix
+  if (IS_EXTERNAL_UI) {
+    if (secret) headers.Authorization = `Bearer ${secret}`
+  } else {
+    if (!unix && port) headers['X-Clash-Port'] = port
+    if (!unix && secret) headers['X-Clash-Secret'] = secret
+    if (unix) headers['X-Clash-Unix'] = unix
+  }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   const reqOptions: RequestInit = {
@@ -49,7 +54,7 @@ export async function clashFetch<T = unknown>(
   for (let attempt = 0; attempt <= maxAttempts; attempt++) {
     let res: Response
     try {
-      res = await fetch(`/clash/${normalizedPath}`, reqOptions)
+      res = await fetch(IS_EXTERNAL_UI ? `/${normalizedPath}` : `/clash/${normalizedPath}`, reqOptions)
     } catch (error) {
       if (attempt === maxAttempts) throw error
       await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]))

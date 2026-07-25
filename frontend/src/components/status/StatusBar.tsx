@@ -74,7 +74,7 @@ export function StatusBar({
   async function startService() {
     setPending('Запуск сервиса...')
     const result = await apiCall<any>('POST', 'control', { action: 'start' })
-    showToast(result.success ? 'XKeen запущен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
+    showToast(result.success ? 'DHQClash Router запущен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
     dispatch({ type: 'SET_SERVICE_STATUS', status: result.success ? 'running' : 'stopped' })
     if (result.success) {
       syncClashApiPort()
@@ -85,14 +85,14 @@ export function StatusBar({
   async function stopService() {
     setPending('Остановка сервиса...')
     const result = await apiCall<any>('POST', 'control', { action: 'stop' })
-    showToast(result.success ? 'XKeen остановлен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
+    showToast(result.success ? 'DHQClash Router остановлен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
     onRefreshStatus()
   }
 
   async function restartService() {
     setPending('Перезапуск...')
     const result = await apiCall<any>('POST', 'control', { action: 'hardRestart' })
-    showToast(result.success ? 'XKeen перезапущен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
+    showToast(result.success ? 'DHQClash Router перезапущен' : `${result.output || result.error}`, result.success ? 'success' : 'error')
     dispatch({ type: 'SET_SERVICE_STATUS', status: result.success ? 'running' : 'stopped' })
     if (result.success) {
       syncClashApiPort()
@@ -175,7 +175,7 @@ export function StatusBar({
 
         <div className="order-1 flex items-center justify-center md:absolute md:left-1/2 md:order-2 md:-translate-x-1/2">
           <a
-            href="https://github.com/zxc-rv/XKeen-UI"
+            href="https://github.com/dashqee/DHQ-XKeen-UI"
             target="_blank"
             rel="noreferrer"
             className="rounded-md transition-opacity hover:opacity-85"
@@ -183,7 +183,7 @@ export function StatusBar({
             <span
               className="text-[28px] font-semibold bg-linear-to-r from-[#00D3F2] via-[#2B7FFF] to-[#155DFC] bg-clip-text text-transparent"
             >
-              XKeen UI
+              DHQClash Router
             </span>
           </a>
         </div>
@@ -229,7 +229,7 @@ export function StatusBar({
                   {version}
                 </Button>
               } />
-              <TooltipContent>{isOutdatedUI ? 'Доступно обновление' : 'Версия XKeen UI'}</TooltipContent>
+              <TooltipContent>{isOutdatedUI ? 'Доступно обновление' : 'Версия DHQClash Router'}</TooltipContent>
             </Tooltip>
           )}
           {isConfigsLoading || !version ? (

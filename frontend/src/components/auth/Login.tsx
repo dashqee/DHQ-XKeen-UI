@@ -1,4 +1,4 @@
-import faviconUrl from '@/assets/favicon.png'
+import { BrandMark } from '@/components/brand/BrandMark'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -46,15 +46,20 @@ export function LoginForm({ mode, onAuth }: LoginFormProps) {
   }
 
   return (
-    <div className="bg-muted dark:bg-background flex min-h-dvh items-center justify-center p-4">
-      <div className="bg-card ring-foreground/10 mx-auto w-full max-w-md space-y-6 rounded-2xl border p-6 shadow-lg">
+    <div className="dhq-external-gate">
+      <div className="bg-card ring-foreground/10 mx-auto w-full max-w-md space-y-6 rounded-[28px] border p-7 shadow-2xl">
         <div className="space-y-2 text-left">
           <div className="flex items-center gap-3">
-            <img src={faviconUrl} alt="XKeen UI" className="size-9" />
-            <h1 className="text-3xl font-semibold">XKeen UI</h1>
+            <BrandMark className="size-12" />
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-[-0.04em]">DHQClash Router</h1>
+              <span className="text-[11px] font-bold text-[var(--dhq-cyan)]">Защита домашней сети</span>
+            </div>
           </div>
           <p className="text-muted-foreground pt-1 text-sm text-pretty">
-            {mode === 'setup' ? 'Установите пароль для доступа к панели' : 'Введите пароль для входа'}
+            {mode === 'setup'
+              ? 'Создайте обязательный пароль администратора перед первым запуском.'
+              : 'Введите пароль администратора для управления роутером.'}
           </p>
         </div>
 
@@ -105,7 +110,7 @@ export function LoginForm({ mode, onAuth }: LoginFormProps) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="dhq-primary-action w-full" disabled={loading}>
             {loading ? '...' : mode === 'setup' ? 'Установить пароль' : 'Войти'}
             {!loading && <IconArrowRight size={16} />}
           </Button>

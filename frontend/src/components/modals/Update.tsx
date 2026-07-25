@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 5000
 const CORE_REPOS = {
   xray: 'XTLS/Xray-core',
   mihomo: 'MetaCubeX/mihomo',
-  self: 'zxc-rv/XKeen-UI',
+  self: 'dashqee/DHQ-XKeen-UI',
 } as const
 
 const mdClass = `
@@ -60,7 +60,7 @@ export function UpdateModal({ onInstalled }: { onInstalled: () => void }) {
   const [loading, setLoading] = useState(true)
   const [installing, setInstalling] = useState(false)
 
-  const coreLabel = updateModalCore === 'self' ? 'XKeen UI' : capitalize(updateModalCore)
+  const coreLabel = updateModalCore === 'self' ? 'DHQClash Router' : capitalize(updateModalCore)
   const close = () => dispatch({ type: 'SHOW_MODAL', modal: 'showUpdateModal', show: false })
 
   useEffect(() => {

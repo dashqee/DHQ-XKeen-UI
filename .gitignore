@@ -26,7 +26,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-external
 *.local
+.superdesign/
 
 # Editor directories and files
 .vscode/*
