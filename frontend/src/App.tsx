@@ -205,6 +205,8 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
             autoCheckCore: data.updater.auto_check_core ?? true,
             backupCore: data.updater.backup_core,
             githubProxies: data.updater.github_proxy || [],
+            routerConfigUrl: data.router_config?.url ?? '',
+            routerConfigAutoUpdate: data.router_config?.auto_update ?? false,
             pingTestUrl: data.clash_api?.ping_url ?? DEFAULT_PING_TEST_URL,
             pingTestTimeout: data.clash_api?.ping_timeout ?? DEFAULT_PING_TEST_TIMEOUT,
             showSourceName: data.clash_api?.show_source_name ?? false,

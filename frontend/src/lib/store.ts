@@ -23,6 +23,8 @@ const initialSettings: AppSettings = {
   autoCheckCore: true,
   backupCore: true,
   githubProxies: [],
+  routerConfigUrl: '',
+  routerConfigAutoUpdate: false,
   pingTestUrl: DEFAULT_PING_TEST_URL,
   pingTestTimeout: DEFAULT_PING_TEST_TIMEOUT,
   showSourceName: false,

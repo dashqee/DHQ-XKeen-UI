@@ -18,6 +18,8 @@ export interface AppSettings {
   autoCheckCore: boolean
   backupCore: boolean
   githubProxies: string[]
+  routerConfigUrl: string
+  routerConfigAutoUpdate: boolean
   pingTestUrl: string
   pingTestTimeout: number
   showSourceName: boolean

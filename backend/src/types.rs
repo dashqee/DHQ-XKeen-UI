@@ -69,6 +69,13 @@ impl Default for UpdaterSettings {
     }
 }
 
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RouterConfigSettings {
+    pub url: String,
+    pub auto_update: bool,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct LogSettings {
@@ -132,6 +139,7 @@ pub struct AppendConfigPaths {
 #[derive(Clone, Serialize, Default)]
 pub struct AppSettings {
     pub updater: UpdaterSettings,
+    pub router_config: RouterConfigSettings,
     pub log: LogSettings,
     pub clash_api: ClashApiSettings,
     pub append_config_paths: AppendConfigPaths,
@@ -147,6 +155,8 @@ impl<'de> Deserialize<'de> for AppSettings {
         struct RawConfig {
             #[serde(default)]
             updater: UpdaterSettings,
+            #[serde(default)]
+            router_config: RouterConfigSettings,
             #[serde(default)]
             log: LogSettings,
             #[serde(default)]
@@ -164,6 +174,7 @@ impl<'de> Deserialize<'de> for AppSettings {
         }
         Ok(Self {
             updater: raw.updater,
+            router_config: raw.router_config,
             log: raw.log,
             clash_api: raw.clash_api,
             append_config_paths: raw.append_config_paths,
