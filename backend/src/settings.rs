@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Json};
 pub async fn get_settings(State(state): State<AppState>) -> impl IntoResponse {
     let s = state.settings.read().unwrap();
     Json(
-        serde_json::json!({ "success": true, "updater": s.updater, "log": s.log, "clash_api": s.clash_api, "auth": { "enabled": s.auth.enabled } }),
+        serde_json::json!({ "success": true, "updater": s.updater, "router_config": s.router_config, "log": s.log, "clash_api": s.clash_api, "auth": { "enabled": s.auth.enabled } }),
     )
 }
 
@@ -48,13 +48,31 @@ pub async fn patch_settings(State(state): State<AppState>, Json(patch): Json<ser
     }
     settings.normalize_proxies();
 
-    *state.settings.write().unwrap() = settings;
+    let previous = state.settings.read().unwrap().router_config.clone();
+    if previous.url != settings.router_config.url || previous.auto_update != settings.router_config.auto_update {
+        settings.router_config.url = settings.router_config.url.trim().to_string();
+        if let Err(e) = crate::router_config::apply(&previous, &settings.router_config).await {
+            return Json(serde_json::json!({"success": false, "error": e}));
+        }
+        if let Some(router_config) = file_json
+            .get_mut("router_config")
+            .and_then(|value| value.as_object_mut())
+        {
+            router_config.insert(
+                "url".into(),
+                serde_json::Value::String(settings.router_config.url.clone()),
+            );
+        }
+    }
 
     let serialized = serde_json::to_string_pretty(&file_json).unwrap();
     let tmp = format!("{}.tmp", APP_CONFIG);
     match tokio::fs::write(&tmp, &serialized).await {
         Ok(_) => match tokio::fs::rename(&tmp, APP_CONFIG).await {
-            Ok(_) => Json(serde_json::json!({"success": true})),
+            Ok(_) => {
+                *state.settings.write().unwrap() = settings;
+                Json(serde_json::json!({"success": true}))
+            }
             Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
         },
         Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),

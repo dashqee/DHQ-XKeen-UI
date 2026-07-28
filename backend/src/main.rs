@@ -5,6 +5,7 @@ mod configs;
 mod controller;
 mod frontend_embedder;
 mod logger;
+mod router_config;
 mod ruleset_inspector;
 mod settings;
 mod types;
