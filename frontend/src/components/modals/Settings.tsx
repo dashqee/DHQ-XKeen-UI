@@ -270,11 +270,26 @@ const RouterConfigSettingsField = memo(function RouterConfigSettingsField({
   showToast: (msg: string, type?: 'success' | 'error') => void
 }) {
   const [url, setUrl] = useState(configUrl)
-  const normalizedUrl = url.trim()
+  const trimmedUrl = url.trim()
+  const normalizedUrl = (
+    (trimmedUrl.startsWith('"') && trimmedUrl.endsWith('"')) ||
+    (trimmedUrl.startsWith("'") && trimmedUrl.endsWith("'")) ||
+    (trimmedUrl.startsWith('`') && trimmedUrl.endsWith('`')) ||
+    (trimmedUrl.startsWith('<') && trimmedUrl.endsWith('>'))
+      ? trimmedUrl.slice(1, -1).trim()
+      : trimmedUrl
+  ).replaceAll('&amp;', '&')
   const hasChanges = normalizedUrl !== configUrl
 
   const save = useCallback(async () => {
-    if (!/^https?:\/\/.+\.yaml(?:[?#].*)?$/i.test(normalizedUrl)) {
+    let parsed: URL
+    try {
+      parsed = new URL(normalizedUrl)
+    } catch {
+      showToast('Укажите HTTP(S)-ссылку на файл .yaml', 'error')
+      return
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.pathname.toLowerCase().endsWith('.yaml')) {
       showToast('Укажите HTTP(S)-ссылку на файл .yaml', 'error')
       return
     }
@@ -407,6 +422,7 @@ export function SettingsModal() {
           showToast('Ошибка: ' + result.error, 'error')
           return false
         }
+        if (result.warning) showToast(result.warning, 'error')
         return true
       } catch (e: any) {
         showToast(e.message, 'error')

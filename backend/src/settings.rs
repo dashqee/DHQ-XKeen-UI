@@ -49,11 +49,17 @@ pub async fn patch_settings(State(state): State<AppState>, Json(patch): Json<ser
     settings.normalize_proxies();
 
     let previous = state.settings.read().unwrap().router_config.clone();
-    if previous.url != settings.router_config.url || previous.auto_update != settings.router_config.auto_update {
-        settings.router_config.url = settings.router_config.url.trim().to_string();
-        if let Err(e) = crate::router_config::apply(&previous, &settings.router_config).await {
-            return Json(serde_json::json!({"success": false, "error": e}));
-        }
+    let router_config_changed =
+        previous.url != settings.router_config.url || previous.auto_update != settings.router_config.auto_update;
+    if !settings.router_config.url.is_empty() {
+        settings.router_config.url = match crate::router_config::validate_url(&settings.router_config.url) {
+            Ok(url) => url,
+            Err(e) => return Json(serde_json::json!({"success": false, "error": e})),
+        };
+    } else if settings.router_config.auto_update {
+        return Json(serde_json::json!({"success": false, "error": "Сначала укажите ссылку на .yaml-конфиг"}));
+    }
+    if router_config_changed {
         if let Some(router_config) = file_json
             .get_mut("router_config")
             .and_then(|value| value.as_object_mut())
@@ -70,7 +76,16 @@ pub async fn patch_settings(State(state): State<AppState>, Json(patch): Json<ser
     match tokio::fs::write(&tmp, &serialized).await {
         Ok(_) => match tokio::fs::rename(&tmp, APP_CONFIG).await {
             Ok(_) => {
+                let next_router_config = settings.router_config.clone();
                 *state.settings.write().unwrap() = settings;
+                if router_config_changed {
+                    if let Err(e) = crate::router_config::apply(&previous, &next_router_config).await {
+                        return Json(serde_json::json!({
+                            "success": true,
+                            "warning": format!("Ссылка сохранена, но настройка роутера не завершена: {e}")
+                        }));
+                    }
+                }
                 Json(serde_json::json!({"success": true}))
             }
             Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
