@@ -24,6 +24,7 @@ import { SelectorsPanel } from '../configuration/mihomo/Selectors'
 import { LogPanel } from '../log/LogPanel'
 import { Button } from '../ui/button'
 import { Spinner } from '../ui/spinner'
+import { RouterConfigCard } from './RouterConfigCard'
 
 function formatBytes(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return '0 Б'
@@ -211,6 +212,8 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
           <span><IconWorld /> Интернет</span>
         </div>
       </section>
+
+      <RouterConfigCard />
 
       <section className="dhq-metrics-grid">
         <article className="dhq-metric-card">

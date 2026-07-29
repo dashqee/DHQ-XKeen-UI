@@ -728,6 +728,7 @@ input:focus-visible,
 
 .dhq-protection-card,
 .dhq-route-card,
+.dhq-router-config-card,
 .dhq-metric-card,
 .dhq-workspace-card,
 .dhq-check-card,
@@ -942,6 +943,95 @@ input:focus-visible,
   opacity: 0.65;
 }
 
+.dhq-router-config-card {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 56px);
+  padding: clamp(22px, 3vw, 30px);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(116, 55, 245, 0.11), transparent 34%),
+    var(--dhq-surface);
+}
+
+.dhq-router-config-copy h2 {
+  margin: 6px 0 8px;
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: -0.035em;
+}
+
+.dhq-router-config-copy p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--dhq-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.dhq-router-config-copy code {
+  color: var(--dhq-cyan);
+  font-family: 'JetBrains Mono Variable', monospace;
+}
+
+.dhq-router-config-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.dhq-router-config-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.dhq-router-config-input svg {
+  width: 17px;
+  height: 17px;
+}
+
+.dhq-router-config-schedule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--dhq-line);
+  border-radius: 15px;
+  background: var(--dhq-surface-2);
+}
+
+.dhq-router-config-schedule__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--dhq-cyan);
+  background: rgba(66, 229, 232, 0.08);
+}
+
+.dhq-router-config-schedule__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dhq-router-config-schedule div {
+  display: grid;
+  gap: 2px;
+}
+
+.dhq-router-config-schedule strong {
+  font-size: 13px;
+}
+
+.dhq-router-config-schedule small {
+  color: var(--dhq-muted);
+  font-size: 11px;
+}
+
 .dhq-metrics-grid {
   display: grid;
   grid-column: 1 / -1;
@@ -1095,8 +1185,14 @@ input:focus-visible,
   }
 
   .dhq-protection-card,
-  .dhq-route-card {
+  .dhq-route-card,
+  .dhq-router-config-card {
     min-height: 300px;
+  }
+
+  .dhq-router-config-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .dhq-metrics-grid,
@@ -1211,6 +1307,19 @@ input:focus-visible,
 
   .dhq-route-card {
     min-height: 295px;
+  }
+
+  .dhq-router-config-card {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .dhq-router-config-input {
+    grid-template-columns: 1fr;
+  }
+
+  .dhq-router-config-input .dhq-primary-action {
+    width: 100%;
   }
 
   .dhq-metrics-grid,
