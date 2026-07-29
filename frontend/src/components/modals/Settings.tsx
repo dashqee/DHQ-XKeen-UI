@@ -256,94 +256,6 @@ const PingTestSettingsField = memo(function PingTestSettingsField({
   )
 })
 
-const RouterConfigSettingsField = memo(function RouterConfigSettingsField({
-  configUrl,
-  autoUpdate,
-  onSaveUrl,
-  onToggleAutoUpdate,
-  showToast,
-}: {
-  configUrl: string
-  autoUpdate: boolean
-  onSaveUrl: (url: string) => Promise<boolean>
-  onToggleAutoUpdate: (value: boolean) => Promise<void>
-  showToast: (msg: string, type?: 'success' | 'error') => void
-}) {
-  const [url, setUrl] = useState(configUrl)
-  const trimmedUrl = url.trim()
-  const normalizedUrl = (
-    (trimmedUrl.startsWith('"') && trimmedUrl.endsWith('"')) ||
-    (trimmedUrl.startsWith("'") && trimmedUrl.endsWith("'")) ||
-    (trimmedUrl.startsWith('`') && trimmedUrl.endsWith('`')) ||
-    (trimmedUrl.startsWith('<') && trimmedUrl.endsWith('>'))
-      ? trimmedUrl.slice(1, -1).trim()
-      : trimmedUrl
-  ).replaceAll('&amp;', '&')
-  const hasChanges = normalizedUrl !== configUrl
-
-  const save = useCallback(async () => {
-    let parsed: URL
-    try {
-      parsed = new URL(normalizedUrl)
-    } catch {
-      showToast('Укажите HTTP(S)-ссылку на файл .yaml', 'error')
-      return
-    }
-    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.pathname.toLowerCase().endsWith('.yaml')) {
-      showToast('Укажите HTTP(S)-ссылку на файл .yaml', 'error')
-      return
-    }
-    const ok = await onSaveUrl(normalizedUrl)
-    if (ok) setUrl(normalizedUrl)
-  }, [normalizedUrl, onSaveUrl, showToast])
-
-  return (
-    <FieldGroup className="gap-0!">
-      <Field className="px-0 py-3">
-        <FieldContent>
-          <FieldLabel htmlFor="router-config-url">Конфигурация роутера</FieldLabel>
-          <FieldDescription className="text-[13px] text-wrap!">
-            Ссылка на персональный .yaml-конфиг. После сохранения конфигурация сразу загрузится и применится.
-          </FieldDescription>
-        </FieldContent>
-        <div className="flex gap-2">
-          <InputGroup className="min-w-0 flex-1">
-            <InputGroupInput
-              id="router-config-url"
-              type="url"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && hasChanges && void save()}
-              placeholder="https://example.com/config.yaml"
-            />
-          </InputGroup>
-          <Button onClick={() => void save()} disabled={!hasChanges || !normalizedUrl}>
-            Сохранить
-          </Button>
-        </div>
-      </Field>
-
-      <Separator className="my-0" />
-
-      <Field orientation="horizontal" className="px-0 py-3">
-        <FieldContent>
-          <FieldLabel htmlFor="router-config-auto-update">Ежедневное обновление</FieldLabel>
-          <FieldDescription className="text-[13px]">
-            Запускать автообновление каждый день в 03:00 через Entware cron
-          </FieldDescription>
-        </FieldContent>
-        <Switch
-          id="router-config-auto-update"
-          checked={autoUpdate}
-          disabled={!configUrl}
-          onCheckedChange={onToggleAutoUpdate}
-          aria-label="Ежедневное обновление конфигурации"
-        />
-      </Field>
-    </FieldGroup>
-  )
-})
-
 function AuthSettingsField({
   authEnabled,
   onToggle,
@@ -498,30 +410,6 @@ export function SettingsModal() {
       const ok = await saveSetting('clash_api', { ping_url: url, ping_timeout: timeout })
       if (ok) dispatch({ type: 'SET_SETTINGS', settings: { pingTestUrl: url, pingTestTimeout: timeout } })
       return ok
-    },
-    [dispatch, saveSetting]
-  )
-
-  const saveRouterConfigUrl = useCallback(
-    async (url: string) => {
-      const enableAutoUpdate = settings.routerConfigUrl ? settings.routerConfigAutoUpdate : true
-      const ok = await saveSetting('router_config', { url, auto_update: enableAutoUpdate })
-      if (ok) {
-        dispatch({
-          type: 'SET_SETTINGS',
-          settings: { routerConfigUrl: url, routerConfigAutoUpdate: enableAutoUpdate },
-        })
-        showToast('Конфигурация роутера обновлена', 'success')
-      }
-      return ok
-    },
-    [dispatch, saveSetting, settings.routerConfigAutoUpdate, settings.routerConfigUrl, showToast]
-  )
-
-  const toggleRouterConfigAutoUpdate = useCallback(
-    async (value: boolean) => {
-      const ok = await saveSetting('router_config.auto_update', value)
-      if (ok) dispatch({ type: 'SET_SETTINGS', settings: { routerConfigAutoUpdate: value } })
     },
     [dispatch, saveSetting]
   )
@@ -722,18 +610,6 @@ export function SettingsModal() {
 
               <TabsContent value="updates">
                 <FieldGroup className="gap-0!">
-                  <p className="text-muted-foreground pt-3 pb-1 text-xs font-medium tracking-wider uppercase">
-                    Конфигурация роутера
-                  </p>
-                  <RouterConfigSettingsField
-                    key={settings.routerConfigUrl}
-                    configUrl={settings.routerConfigUrl}
-                    autoUpdate={settings.routerConfigAutoUpdate}
-                    onSaveUrl={saveRouterConfigUrl}
-                    onToggleAutoUpdate={toggleRouterConfigAutoUpdate}
-                    showToast={showToast}
-                  />
-                  <Separator className="my-2" />
                   <p className="text-muted-foreground pt-3 pb-1 text-xs font-medium tracking-wider uppercase">
                     Обновления компонентов
                   </p>
