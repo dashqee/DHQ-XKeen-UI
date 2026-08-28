@@ -466,6 +466,7 @@ async fn main() {
             "/api/settings",
             get(settings::get_settings).patch(settings::patch_settings),
         )
+        .route("/api/router-config/refresh", post(settings::post_router_config_refresh))
         .route("/api/version", get(version::version_handler))
         .route("/api/ruleset", get(ruleset_inspector::get_ruleset_content))
         .route("/api/device-list", get(api_relay::get_device_list))

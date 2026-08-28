@@ -9,6 +9,23 @@ pub async fn get_settings(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
+/// Fetch the configured config now, on demand.
+pub async fn post_router_config_refresh(State(state): State<AppState>) -> impl IntoResponse {
+    let settings = state.settings.read().unwrap().router_config.clone();
+    match crate::router_config::refresh(&settings).await {
+        Ok(()) => Json(ApiResponse::<()> {
+            success: true,
+            error: None,
+            data: None,
+        }),
+        Err(e) => Json(ApiResponse::<()> {
+            success: false,
+            error: Some(e),
+            data: None,
+        }),
+    }
+}
+
 pub async fn patch_settings(State(state): State<AppState>, Json(patch): Json<serde_json::Value>) -> impl IntoResponse {
     let _guard = state.app_config_lock.lock().await;
     let mut file_json = tokio::fs::read_to_string(APP_CONFIG)

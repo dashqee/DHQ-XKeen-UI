@@ -1,4 +1,4 @@
-import { IconCheck, IconClock, IconDeviceFloppy, IconLink } from '@tabler/icons-react'
+import { IconCheck, IconClock, IconCloudDownload, IconDeviceFloppy, IconLink } from '@tabler/icons-react'
 import { useCallback, useEffect, useState } from 'react'
 import { apiCall } from '../../lib/api'
 import { useAppContext } from '../../lib/store'
@@ -74,6 +74,22 @@ export function RouterConfigCard() {
     }
   }, [dispatch, normalizedUrl, settings.routerConfigAutoUpdate, settings.routerConfigUrl, showToast])
 
+  const refreshNow = useCallback(async () => {
+    setBusy(true)
+    try {
+      const result = await apiCall<SettingsResponse>('POST', 'router-config/refresh')
+      if (!result.success) {
+        showToast(`Ошибка: ${result.error ?? 'Не удалось обновить конфигурацию'}`, 'error')
+        return
+      }
+      showToast('Конфигурация загружена с сервера', 'success')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Не удалось обновить конфигурацию', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }, [showToast])
+
   const toggleAutoUpdate = useCallback(
     async (value: boolean) => {
       setBusy(true)
@@ -126,6 +142,20 @@ export function RouterConfigCard() {
           <Button className="dhq-primary-action" onClick={() => void saveUrl()} disabled={!hasChanges || !normalizedUrl || busy}>
             {busy ? <Spinner /> : settings.routerConfigUrl && !hasChanges ? <IconCheck /> : <IconDeviceFloppy />}
             {busy ? 'Сохраняем…' : settings.routerConfigUrl && !hasChanges ? 'Сохранено' : 'Сохранить'}
+          </Button>
+        </div>
+
+        <div className="dhq-router-config-schedule">
+          <span className="dhq-router-config-schedule__icon">
+            <IconCloudDownload />
+          </span>
+          <div>
+            <strong>Загрузить сейчас</strong>
+            <small>Забрать конфигурацию с сервера, не дожидаясь расписания</small>
+          </div>
+          <Button variant="outline" onClick={() => void refreshNow()} disabled={!settings.routerConfigUrl || busy || hasChanges}>
+            {busy ? <Spinner /> : <IconCloudDownload />}
+            Обновить
           </Button>
         </div>
 

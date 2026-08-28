@@ -7,6 +7,7 @@ import {
   IconDeviceDesktop,
   IconPlayerPlayFilled,
   IconRefresh,
+  IconReload,
   IconRoute,
   IconRouter,
   IconServer,
@@ -89,19 +90,25 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
     [connections]
   )
 
-  const changeServiceState = async () => {
+  /** start / hardRestart go through XKeen's init script, so they also rebuild the
+   *  firewall rules; softRestart only respawns the Mihomo process and leaves
+   *  those in place. They are separate buttons because they fix different
+   *  things: a bad config needs the core restarted, a lost redirect needs XKeen. */
+  const runControl = async (
+    action: 'start' | 'hardRestart' | 'softRestart',
+    pendingText: string,
+    okText: string
+  ) => {
     if (busy || isPending) return
     setBusy(true)
-    const action = isRunning ? 'hardRestart' : 'start'
-    dispatch({
-      type: 'SET_SERVICE_STATUS',
-      status: 'pending',
-      pendingText: isRunning ? 'Перезапуск…' : 'Подключение…',
-    })
+    dispatch({ type: 'SET_SERVICE_STATUS', status: 'pending', pendingText })
     try {
-      const result = await apiCall<{ success: boolean; output?: string; error?: string }>('POST', 'control', { action })
+      const result = await apiCall<{ success: boolean; output?: string; error?: string }>('POST', 'control', {
+        action,
+        ...(action === 'softRestart' ? { core: 'mihomo' } : {}),
+      })
       dispatch({ type: 'SET_SERVICE_STATUS', status: result.success ? 'running' : 'stopped' })
-      showToast(result.success ? (isRunning ? 'Маршрутизация перезапущена' : 'Защита включена') : result.output || result.error || 'Команда не выполнена', result.success ? 'success' : 'error')
+      showToast(result.success ? okText : result.output || result.error || 'Команда не выполнена', result.success ? 'success' : 'error')
     } catch (error) {
       dispatch({ type: 'SET_SERVICE_STATUS', status: isRunning ? 'running' : 'stopped' })
       showToast(error instanceof Error ? error.message : 'Не удалось связаться с роутером', 'error')
@@ -155,10 +162,35 @@ export function RouterDashboard({ onOpenRouting }: { onOpenRouting: () => void }
             </div>
           </div>
           <div className="dhq-protection-actions">
-            <Button className="dhq-primary-action" onClick={changeServiceState} disabled={busy || isPending}>
-              {busy || isPending ? <Spinner /> : isRunning ? <IconRefresh /> : <IconPlayerPlayFilled />}
-              {isRunning ? 'Быстрый перезапуск' : 'Включить защиту'}
-            </Button>
+            {isRunning ? (
+              <>
+                <Button
+                  className="dhq-primary-action"
+                  onClick={() => void runControl('hardRestart', 'Перезапуск XKeen…', 'XKeen перезапущен')}
+                  disabled={busy || isPending}
+                >
+                  {busy || isPending ? <Spinner /> : <IconRefresh />}
+                  Перезапустить XKeen
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => void runControl('softRestart', 'Перезапуск Mihomo…', 'Mihomo перезапущен')}
+                  disabled={busy || isPending}
+                >
+                  <IconReload data-icon="inline-start" />
+                  Перезапустить Mihomo
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="dhq-primary-action"
+                onClick={() => void runControl('start', 'Подключение…', 'Защита включена')}
+                disabled={busy || isPending}
+              >
+                {busy || isPending ? <Spinner /> : <IconPlayerPlayFilled />}
+                Включить защиту
+              </Button>
+            )}
             <Button variant="outline" onClick={onOpenRouting}>
               <IconRoute data-icon="inline-start" />
               Изменить маршрут
