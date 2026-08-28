@@ -363,6 +363,11 @@ pub async fn post_update(State(state): State<AppState>, Json(req): Json<UpdateRe
         _ = fs::set_permissions(target, std::fs::Permissions::from_mode(0o755)).await;
         _ = tokio::task::spawn_blocking(rustix::fs::sync).await;
 
+        // Before the restart, so the lists are in place by the time XKeen is
+        // next asked to build its rules, and so the result lands in the update
+        // log the user is watching rather than in the next boot's.
+        crate::xkeen_defaults::ensure_defaults_logged().await;
+
         log("INFO", format!("Обновление DHQClash Router до {} завершено", ver));
 
         if Path::new(S99XKEEN_UI).exists() {

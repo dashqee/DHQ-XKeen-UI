@@ -5,6 +5,7 @@ import type { CodeMirrorRef } from './components/configuration/CodeMirror'
 import { ConfigPanel } from './components/configuration/ConfigPanel'
 import { DevicesView, DiagnosticsView, RouterDashboard, RoutingView } from './components/dashboard/RouterViews'
 import { RouterShell, type ShellNavigationItem } from './components/layout/RouterShell'
+import { UpdatePrompt } from './components/modals/UpdatePrompt'
 import { Toast } from './components/ui/toast'
 import { apiCall } from './lib/api'
 import { LazyBoundary, lazyLoad, useLazyMount } from './lib/loader'
@@ -160,6 +161,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         dispatch({
           type: 'SET_VERSION',
           version: ui.version,
+          latestUI: typeof ui.latest === 'string' ? ui.latest : '',
           isOutdatedUI: !!ui.outdated,
           isOutdatedCore,
         })
@@ -175,8 +177,8 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         }
 
         if (!showUpdateToast) return
-        if (ui.show_toast) showToast({ title: 'Доступно обновление', body: 'Доступна новая версия DHQClash Router', persistent: true, id: 'update-ui', ...(ui.link && { action: { url: ui.link } }) })
-
+        // No toast for the panel itself: UpdatePrompt asks about it on entry,
+        // and two notices for one update is one too many.
         const entry = data.mihomo
         if (entry?.show_toast) {
           showToast({
@@ -403,6 +405,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
         {renderSection()}
       </RouterShell>
       <Toast />
+      <UpdatePrompt />
       <ModalManager
         onInstalled={onInstalled}
         onGenerate={generateConfig}

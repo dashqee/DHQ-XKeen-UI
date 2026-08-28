@@ -12,6 +12,7 @@ mod types;
 mod updater;
 mod version;
 mod websocket;
+mod xkeen_defaults;
 use crate::logger::{log, ts};
 use crate::types::*;
 use axum::http::StatusCode;
@@ -420,6 +421,10 @@ async fn main() {
         rci_token,
     };
     version::start_update_checker(state.clone());
+
+    // Covers a fresh install as well as an update: the panel restarts itself
+    // after installing a release, so both arrive here.
+    xkeen_defaults::ensure_defaults_logged().await;
 
     if let Some(ref _token) = state.rci_token {
         log("INFO", "RCI токен авторизации найден".into());
