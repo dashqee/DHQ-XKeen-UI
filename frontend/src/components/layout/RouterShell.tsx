@@ -8,6 +8,7 @@ import {
   IconListTree,
   IconLogout,
   IconRoute,
+  IconStack2,
   IconSettings,
 } from '@tabler/icons-react'
 import type { ComponentType, ReactNode } from 'react'
@@ -25,6 +26,7 @@ export interface ShellNavigationItem {
 const DEFAULT_ICONS: Record<string, ShellNavigationItem['icon']> = {
   home: IconHome,
   routing: IconRoute,
+  rules: IconStack2,
   devices: IconDevices,
   diagnostics: IconActivity,
   overview: IconDeviceDesktopAnalytics,

@@ -4,6 +4,7 @@ import { LoginForm } from './components/auth/Login'
 import type { CodeMirrorRef } from './components/configuration/CodeMirror'
 import { ConfigPanel } from './components/configuration/ConfigPanel'
 import { DevicesView, DiagnosticsView, RouterDashboard, RoutingView } from './components/dashboard/RouterViews'
+import { RulesView } from './components/rules/RulesView'
 import { RouterShell, type ShellNavigationItem } from './components/layout/RouterShell'
 import { Toast } from './components/ui/toast'
 import { apiCall } from './lib/api'
@@ -346,6 +347,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
   const navigation: ShellNavigationItem[] = [
     { id: 'home', label: 'Главная', description: 'Состояние защиты' },
     { id: 'routing', label: 'Маршрутизация', description: 'Текущий маршрут' },
+    { id: 'rules', label: 'Правила', description: 'Наборы и поиск' },
     { id: 'devices', label: 'Устройства', description: 'Активные соединения' },
     { id: 'configuration', label: 'Конфигурация', description: 'Настройки Mihomo' },
     { id: 'diagnostics', label: 'Диагностика', description: 'Проверки и журнал' },
@@ -354,6 +356,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
   const sectionTitles: Record<string, string> = {
     home: 'Главная',
     routing: 'Маршрутизация',
+    rules: 'Правила',
     devices: 'Устройства',
     configuration: 'Конфигурация',
     diagnostics: 'Диагностика',
@@ -361,6 +364,7 @@ function AppContent({ onLogout }: { onLogout: () => void }) {
 
   const renderSection = () => {
     if (activeSection === 'routing') return <RoutingView />
+    if (activeSection === 'rules') return <RulesView />
     if (activeSection === 'devices') return <DevicesView />
     if (activeSection === 'diagnostics') {
       return (

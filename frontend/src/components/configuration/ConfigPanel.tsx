@@ -66,7 +66,6 @@ const BackupsModalContainer = memo(function BackupsModalContainer({
   )
 })
 
-type ProvidersModalKind = 'rules' | 'proxies'
 
 interface Props {
   onOpenImport: () => void
@@ -277,7 +276,7 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
   }, [configs, activeConfigFile])
   const [validationState, setValidationState] = useState<{ isValid: boolean; error?: string } | null>(null)
 
-  const [providersModalKind, setProvidersModalKind] = useState<ProvidersModalKind | null>(null)
+  const [providersModalKind, setProvidersModalKind] = useState<'proxies' | null>(null)
   const [isProvidersModalOpen, setIsProvidersModalOpen] = useState(false)
   const mountProvidersModal = useLazyMount(isProvidersModalOpen)
 
@@ -380,7 +379,7 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
     setValidationState((prev) => (prev?.isValid === isValid && prev?.error === error ? prev : { isValid, error }))
   }, [])
 
-  const openProvidersModal = useCallback((kind: ProvidersModalKind) => {
+  const openProvidersModal = useCallback((kind: 'proxies') => {
     setProvidersModalKind(kind)
     setIsProvidersModalOpen(true)
   }, [])
@@ -630,12 +629,6 @@ export function ConfigPanel({ onOpenImport, onOpenTemplate, onOpenBackups, onRef
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={onOpenBackups}>
                             <IconBox /> Бэкапы конфигураций
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={!activeClashApiPort && !activeClashApiUnix}
-                            onClick={() => openProvidersModal('rules')}
-                          >
-                            <IconListDetails /> Провайдеры правил
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={!activeClashApiPort && !activeClashApiUnix}

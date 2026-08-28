@@ -468,6 +468,7 @@ async fn main() {
         )
         .route("/api/version", get(version::version_handler))
         .route("/api/ruleset", get(ruleset_inspector::get_ruleset_content))
+        .route("/api/ruleset/search", get(ruleset_inspector::search_rulesets))
         .route("/api/device-list", get(api_relay::get_device_list))
         .route("/api/update", post(updater::post_update))
         .route("/api/auth/logout", post(auth::post_logout))
