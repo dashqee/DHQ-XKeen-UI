@@ -66,6 +66,7 @@ pub async fn version_handler(State(state): State<AppState>) -> impl IntoResponse
                 "version": VERSION.trim_start_matches('v'),
                 "outdated": ui,
                 "show_toast": check(ui, &state.update_checker.last_ui_toast),
+                "latest": ui_tag,
                 "link": link,
             }),
         );
