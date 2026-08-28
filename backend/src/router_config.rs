@@ -100,6 +100,24 @@ async fn run_script() -> Result<(), String> {
     run_command("/bin/sh", &[AUTO_UPDATE_SCRIPT]).await
 }
 
+/// Pull the config from the server right now, without waiting for the nightly
+/// cron or for the URL to change.
+///
+/// The script is what does the work — it fetches, swaps XKeen's intermediate
+/// config and restarts it — so this is the same path the schedule takes, not a
+/// second implementation that could drift from it.
+pub async fn refresh(settings: &RouterConfigSettings) -> Result<(), String> {
+    if settings.url.is_empty() {
+        return Err("Сначала укажите ссылку на .yaml-конфиг".into());
+    }
+    if !Path::new(AUTO_UPDATE_SCRIPT).exists() {
+        // Saving the URL is what writes the script. An install that predates
+        // this button, or a wiped /opt/etc/mihomo, needs it written first.
+        reconcile_script(&validate_url(&settings.url)?).await?;
+    }
+    run_script().await
+}
+
 async fn configure_cron(enabled: bool) -> Result<(), String> {
     let was_installed = cron_is_installed();
     if enabled && !was_installed {
