@@ -58,10 +58,29 @@ pub struct UpdaterSettings {
     pub github_proxy: Vec<String>,
 }
 
+/// Our own GitHub mirrors, tried before the public ones.
+///
+/// A router on a Russian ISP often cannot reach GitHub at all, and the public
+/// gh-proxy services are themselves reachable only sometimes. These run on our
+/// nodes, which can.
+pub const DHQ_GITHUB_MIRRORS: &[&str] = &["https://141.105.68.132.sslip.io"];
+
+/// The public services, kept as a fallback: if our mirror is down, updates
+/// should still work rather than stop everywhere at once.
+pub const PUBLIC_GITHUB_MIRRORS: &[&str] = &["https://gh-proxy.com", "https://ghfast.top"];
+
+pub fn default_github_proxy() -> Vec<String> {
+    DHQ_GITHUB_MIRRORS
+        .iter()
+        .chain(PUBLIC_GITHUB_MIRRORS)
+        .map(|s| s.to_string())
+        .collect()
+}
+
 impl Default for UpdaterSettings {
     fn default() -> Self {
         Self {
-            github_proxy: vec!["https://gh-proxy.com".into(), "https://ghfast.top".into()],
+            github_proxy: default_github_proxy(),
             backup_core: true,
             auto_check_ui: true,
             auto_check_core: true,
@@ -185,7 +204,7 @@ impl<'de> Deserialize<'de> for AppSettings {
 
 impl AppSettings {
     pub fn normalize_proxies(&mut self) {
-        self.updater.github_proxy = self
+        let mut proxies: Vec<String> = self
             .updater
             .github_proxy
             .iter()
@@ -197,6 +216,16 @@ impl AppSettings {
                 }
             })
             .collect();
+
+        // A router installed before the mirrors existed keeps its saved list for
+        // good, so a new default alone would reach nobody who already has the UI.
+        // Upgrade the untouched list in place — but only that one: a list the
+        // user has edited is their answer, including if what they removed was
+        // our mirror.
+        if proxies.iter().map(String::as_str).eq(PUBLIC_GITHUB_MIRRORS.iter().copied()) {
+            proxies = default_github_proxy();
+        }
+        self.updater.github_proxy = proxies;
     }
 }
 
@@ -216,4 +245,58 @@ pub struct UpdateReq {
     pub backup_core: bool,
     #[serde(default)]
     pub assets: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn settings_with(proxies: &[&str]) -> AppSettings {
+        let mut settings = AppSettings::default();
+        settings.updater.github_proxy = proxies.iter().map(|p| p.to_string()).collect();
+        settings
+    }
+
+    #[test]
+    fn our_mirrors_come_before_the_public_ones() {
+        // The list is tried top down, so order is the whole feature.
+        let proxies = default_github_proxy();
+        let ours = proxies.iter().position(|p| p == DHQ_GITHUB_MIRRORS[0]);
+        let public = proxies.iter().position(|p| p == PUBLIC_GITHUB_MIRRORS[0]);
+        assert!(ours < public, "{proxies:?}");
+        for mirror in PUBLIC_GITHUB_MIRRORS {
+            assert!(proxies.iter().any(|p| p == mirror), "public fallback dropped");
+        }
+    }
+
+    #[test]
+    fn an_install_from_before_the_mirrors_is_upgraded() {
+        // A router that already has the UI keeps its saved list forever, so a
+        // new default alone would never reach it.
+        let mut settings = settings_with(PUBLIC_GITHUB_MIRRORS);
+        settings.normalize_proxies();
+        assert_eq!(settings.updater.github_proxy, default_github_proxy());
+    }
+
+    #[test]
+    fn a_list_the_user_edited_is_left_alone() {
+        // Including when what they removed is our mirror: that is an answer.
+        let mut settings = settings_with(&["https://gh-proxy.com"]);
+        settings.normalize_proxies();
+        assert_eq!(settings.updater.github_proxy, vec!["https://gh-proxy.com"]);
+
+        let mut settings = settings_with(&["https://mine.example"]);
+        settings.normalize_proxies();
+        assert_eq!(settings.updater.github_proxy, vec!["https://mine.example"]);
+    }
+
+    #[test]
+    fn a_bare_host_still_gets_a_scheme() {
+        let mut settings = settings_with(&["mirror.example", "://other.example"]);
+        settings.normalize_proxies();
+        assert_eq!(
+            settings.updater.github_proxy,
+            vec!["https://mirror.example", "https://other.example"]
+        );
+    }
 }

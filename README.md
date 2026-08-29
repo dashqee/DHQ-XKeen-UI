@@ -55,6 +55,18 @@ curl -fL https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh | 
 curl -fL https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh | sh -s -- beta
 ```
 
+### Если роутер не видит GitHub
+
+На части провайдеров GitHub с роутера не открывается вовсе. Установщик и сам
+ходит через наши зеркала, но скачать его самого тоже нужно — с зеркала:
+
+```SH
+curl -fL https://141.105.68.132.sslip.io/https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh | sh
+```
+
+Подробности и вариант установки полностью без сети до GitHub —
+[INSTALL_ENTWARE.md](INSTALL_ENTWARE.md#9-установка-без-доступа-к-github).
+
 <br>
 
 ## 🌐 Доступ извне
