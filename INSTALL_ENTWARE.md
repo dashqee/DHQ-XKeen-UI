@@ -224,3 +224,71 @@ curl -H "Authorization: Bearer УНИКАЛЬНЫЙ_СЕКРЕТ" \
 | Лог панели | `/opt/var/log/xkeen-ui.log` |
 | Конфиг Mihomo | `/opt/etc/mihomo/config.yaml` |
 | Mihomo external-ui | `/opt/etc/mihomo/ui` |
+
+## 9. Установка без доступа к GitHub
+
+На части российских провайдеров GitHub с роутера не открывается — `curl` виснет
+или отдаёт ошибку TLS. Проверить:
+
+```sh
+curl -fsSI --max-time 10 https://raw.githubusercontent.com/ >/dev/null \
+  && echo "GitHub доступен" || echo "GitHub недоступен"
+```
+
+### Вариант A: через зеркало (обычный случай)
+
+У проекта есть зеркало GitHub на своём узле. Формат простой: адрес зеркала,
+потом целиком исходная ссылка.
+
+```sh
+cd /opt/tmp
+curl -fL \
+  https://141.105.68.132.sslip.io/https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh \
+  -o setup-dhqclash.sh
+sh setup-dhqclash.sh
+```
+
+Дальше установщик и сам ходит через зеркало: и за своим бинарником, и за
+списком релизов. Своё зеркало задаётся переменной:
+
+```sh
+https://141.105.68.132.sslip.ioS="https://мой-хост" sh setup-dhqclash.sh
+```
+
+`https://141.105.68.132.sslip.ioS=""` отключает зеркала и заставляет ходить напрямую в GitHub.
+
+После установки те же зеркала уже прописаны в самом DHQClash Router — в
+«Настройки → Обновления → GitHub proxy». Через них он тянет свои обновления и
+релизы Mihomo. Список перебирается сверху вниз, поэтому наши зеркала стоят
+первыми, а публичные (`gh-proxy.com`, `ghfast.top`) остаются запасным
+вариантом.
+
+### Вариант B: совсем без сети до GitHub
+
+Если недоступно и зеркало, всё нужное переносится с рабочей машины. Установщик
+сам подхватит бинарник из `/opt/tmp`, если тот уже лежит там, — качать он
+ничего не станет.
+
+На машине с интернетом (подставьте архитектуру роутера: `arm64-v8a`,
+`mips32le` или `mips32`):
+
+```sh
+ARCH=arm64-v8a
+curl -fLO https://github.com/dashqee/DHQ-XKeen-UI/releases/latest/download/dhqclash-router-$ARCH
+curl -fLO https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh
+scp dhqclash-router-$ARCH setup.sh root@роутер:/opt/tmp/
+```
+
+На роутере:
+
+```sh
+cd /opt/tmp
+sh setup.sh
+```
+
+В логе установки должно быть «Локальная установка бинарника...» — значит файл
+взят с диска, а не из сети.
+
+Обновлять такой роутер придётся тем же способом: положить новый бинарник в
+`/opt/tmp` и запустить установщик заново.
+

@@ -293,11 +293,26 @@ async fn main() {
         match command {
             Command::Setup => {
                 use std::os::unix::process::CommandExt;
+                // Mirrors first, GitHub last. A router that cannot reach GitHub
+                // is exactly the one most likely to be running this.
+                let raw = "https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh";
+                let sources: Vec<String> = types::DHQ_GITHUB_MIRRORS
+                    .iter()
+                    .map(|m| format!("{}/{}", m.trim_end_matches('/'), raw))
+                    .chain(std::iter::once(raw.to_string()))
+                    .collect();
+                // The subshell matters: `a || b | sh` parses as `a || (b | sh)`,
+                // which pipes nothing when the first source works.
+                let script = format!(
+                    "( {} ) | sh",
+                    sources
+                        .iter()
+                        .map(|u| format!("curl -fsSL {}", u))
+                        .collect::<Vec<_>>()
+                        .join(" || ")
+                );
                 let err = std::process::Command::new("sh")
-                    .args([
-                        "-c",
-                        "curl -L https://raw.githubusercontent.com/dashqee/DHQ-XKeen-UI/main/setup.sh | sh",
-                    ])
+                    .args(["-c", &script])
                     .exec();
                 eprintln!(" {} {}", " Ошибка запуска setup:".red().bold(), err);
                 exit(1);

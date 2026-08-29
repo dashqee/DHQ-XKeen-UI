@@ -25,6 +25,20 @@ BETA=false
 LOCAL=false
 [ "$1" = "beta" ] && BETA=true
 
+# A router on a Russian ISP often cannot reach GitHub at all, so every fetch
+# goes through our mirrors first and falls back to GitHub itself. Override with
+# MIRRORS="https://my-mirror" if you run your own; MIRRORS="" to go direct.
+MIRRORS="${MIRRORS-https://141.105.68.132.sslip.io}"
+
+# Fetch $1 through the mirrors, then directly. Extra curl arguments follow.
+gh_fetch() {
+  url="$1"; shift
+  for m in $MIRRORS; do
+    curl -fsSL --connect-timeout 10 "$@" "${m%/}/$url" && return 0
+  done
+  curl -fsSL --connect-timeout 10 "$@" "$url"
+}
+
 spinner() {
   local pid=$1 msg=$2
   trap 'kill "$pid" 2>/dev/null; printf "\r${RED} ❌ ${NC}%s\033[K\n" "$msg"; printf "\033[?25h"; return 130' INT
@@ -57,7 +71,7 @@ download_files() {
   if [ "$BETA" = true ]; then
     local beta_tag="/tmp/xkeen_beta"
     trap "rm -f $beta_tag" EXIT
-    (curl -s https://api.github.com/repos/dashqee/DHQ-XKeen-UI/releases | \
+    (gh_fetch https://api.github.com/repos/dashqee/DHQ-XKeen-UI/releases | \
   jq -re '.[0] | select(.prerelease == true) | .tag_name' > $beta_tag) &
     if ! spinner $! "Поиск бета-релиза..."; then
       printf "${RED_BOLD}\n Нет актуального бета-релиза${NCN}"
@@ -75,7 +89,7 @@ download_files() {
       exit 1
     fi
   else
-    ( set -e; curl -Lsfo $XKEENUI_BIN $download_url/$bin_name && chmod +x $XKEENUI_BIN ) &
+    ( set -e; gh_fetch "$download_url/$bin_name" -o $XKEENUI_BIN && chmod +x $XKEENUI_BIN ) &
     if ! spinner $! "Загрузка бинарника..."; then
       printf "${RED_BOLD}\n Не удалось загрузить бинарник.${NCN}"
       exit 1
@@ -128,6 +142,10 @@ update_xkeenui() {
   else
     sed -i 's|^PROCS=/opt/sbin/xkeen-ui$|PROCS=xkeen-ui|' /opt/etc/init.d/S99xkeen-ui
   fi
+
+  # Same courtesy as a fresh install: a binary already staged in /opt/tmp is
+  # what a router with no route to GitHub has to update through.
+  [ -f "/opt/tmp/dhqclash-router-$ARCH" ] && LOCAL=true
 
   legacy_installation_check; download_files
 
