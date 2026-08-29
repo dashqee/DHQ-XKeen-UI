@@ -130,7 +130,11 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.version }}
-          prerelease: true
+          # A version with a suffix (v0.4.1-beta.1) is a pre-release, a plain one
+          # is not. Hardcoded true, every publish lands as a pre-release and has
+          # to be un-marked by hand afterwards — and until someone does,
+          # /releases/latest (what setup.sh installs from) skips it.
+          prerelease: ${{ contains(inputs.version, '-') }}
           files: |
             artifacts/dhqclash-router-*/*
             artifacts/dhqclash-external-ui/*
