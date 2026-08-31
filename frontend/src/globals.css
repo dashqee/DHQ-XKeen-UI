@@ -1494,7 +1494,13 @@ input:focus-visible,
 .dhq-external-status__mark {
   padding: 18px;
   opacity: 0.9;
-  filter: drop-shadow(0 20px 45px rgba(72, 119, 244, 0.24));
+}
+
+/* box-shadow instead of a drop-shadow filter: filters rasterize the SVG layer
+   and pixelate the wordmark on hidpi screens. */
+.dhq-external-status__mark svg {
+  border-radius: 24%;
+  box-shadow: 0 20px 45px rgba(72, 119, 244, 0.24);
 }
 
 .dhq-external-actions {
