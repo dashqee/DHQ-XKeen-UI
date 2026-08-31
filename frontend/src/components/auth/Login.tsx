@@ -52,7 +52,7 @@ export function LoginForm({ mode, onAuth }: LoginFormProps) {
           <div className="flex items-center gap-3">
             <BrandMark className="size-12" />
             <div>
-              <h1 className="text-2xl font-extrabold tracking-[-0.04em]">DHQClash Router</h1>
+              <h1 className="dhq-display text-2xl font-extrabold tracking-[-0.04em]">DHQClash Router</h1>
               <span className="text-[11px] font-bold text-[var(--dhq-cyan)]">Защита домашней сети</span>
             </div>
           </div>
