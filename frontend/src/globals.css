@@ -493,6 +493,10 @@
   --dhq-indigo: #130e6d;
   --dhq-indigo-deep: #080435;
   --dhq-font-display: 'Geologica Variable', 'Inter Variable', system-ui, sans-serif;
+  --dhq-gradient: linear-gradient(125deg, var(--dhq-violet), var(--dhq-blue) 54%, var(--dhq-cyan));
+  /* Mirrored 2x-wide copy of --dhq-gradient: panning across it sweeps the
+     colours and returns without a seam (same trick as the web landing). */
+  --dhq-gradient-sweep: linear-gradient(125deg, var(--dhq-violet), var(--dhq-blue) 27%, var(--dhq-cyan) 50%, var(--dhq-blue) 73%, var(--dhq-violet));
   --dhq-line: rgba(107, 92, 244, 0.22);
   --dhq-line-strong: rgba(66, 222, 233, 0.42);
   --background: #08091f;
@@ -531,6 +535,40 @@ body {
     radial-gradient(900px 540px at 8% -10%, rgba(107, 68, 244, 0.2), transparent 66%),
     radial-gradient(820px 520px at 96% 15%, rgba(66, 222, 233, 0.1), transparent 68%),
     var(--dhq-bg);
+}
+
+/* The landing's backdrop: a faint blueprint grid plus a sparse starfield,
+   both fading out toward the bottom so content stays the loudest thing. */
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, #000, transparent 76%);
+  content: '';
+  pointer-events: none;
+}
+
+body::after {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 21% 16%, rgba(247, 248, 255, 0.75) 0 1px, transparent 2.4px),
+    radial-gradient(circle at 67% 7%, rgba(199, 255, 61, 0.8) 0 1.2px, transparent 2.6px),
+    radial-gradient(circle at 84% 29%, rgba(66, 222, 233, 0.7) 0 1.1px, transparent 2.5px),
+    radial-gradient(circle at 38% 44%, rgba(247, 248, 255, 0.5) 0 1px, transparent 2.2px),
+    radial-gradient(circle at 9% 62%, rgba(66, 222, 233, 0.55) 0 1px, transparent 2.4px),
+    radial-gradient(circle at 55% 23%, rgba(247, 248, 255, 0.4) 0 0.9px, transparent 2px),
+    radial-gradient(circle at 93% 56%, rgba(199, 255, 61, 0.5) 0 1px, transparent 2.3px),
+    radial-gradient(circle at 45% 82%, rgba(247, 248, 255, 0.35) 0 0.9px, transparent 2px);
+  mask-image: linear-gradient(to bottom, #000, transparent 85%);
+  animation: dhq-star-twinkle 5.2s ease-in-out infinite;
+  content: '';
+  pointer-events: none;
 }
 
 .dhq-display {
@@ -854,8 +892,14 @@ input:focus-visible,
 
 .dhq-primary-action {
   border: 1px solid rgba(66, 222, 233, 0.22);
-  background: linear-gradient(125deg, var(--dhq-violet), var(--dhq-blue) 54%, #3bbdc7);
+  background: var(--dhq-gradient-sweep);
+  background-size: 200% 100%;
   box-shadow: 0 12px 32px rgba(72, 119, 244, 0.23);
+}
+
+.dhq-primary-action:hover,
+.dhq-primary-action:focus-visible {
+  animation: dhq-gradient-sweep 2.6s ease-in-out infinite alternate;
 }
 
 .dhq-orbit {
@@ -1373,6 +1417,21 @@ input:focus-visible,
   }
 }
 
+@keyframes dhq-gradient-sweep {
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes dhq-star-twinkle {
+  0%, 100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1385,9 +1444,11 @@ input:focus-visible,
 }
 
 .dhq-external-gate {
+  position: relative;
   display: grid;
   min-height: 100dvh;
   place-items: center;
+  overflow: hidden;
   padding: 24px;
   background:
     linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
@@ -1396,6 +1457,24 @@ input:focus-visible,
     radial-gradient(circle at 90% 15%, rgba(66, 222, 233, 0.14), transparent 42%),
     var(--dhq-bg);
   background-size: 52px 52px, 52px 52px, auto, auto, auto;
+}
+
+/* The landing hero's blurred aurora, sitting behind the gate card. */
+.dhq-external-gate::before {
+  position: absolute;
+  z-index: 0;
+  width: min(560px, 92vw);
+  aspect-ratio: 1.18 / 1;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(66, 222, 233, 0.26), rgba(107, 68, 244, 0.22) 62%, transparent 82%);
+  filter: blur(46px);
+  content: '';
+  pointer-events: none;
+}
+
+.dhq-external-gate > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dhq-external-gate__card {
