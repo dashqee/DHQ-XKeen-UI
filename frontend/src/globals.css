@@ -87,6 +87,36 @@
   unicode-range: U+1F1E0-1F1FF;
 }
 
+/* geologica-cyrillic-wght-normal */
+@font-face {
+  font-family: 'Geologica Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../node_modules/@fontsource-variable/geologica/files/geologica-cyrillic-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* geologica-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Geologica Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../node_modules/@fontsource-variable/geologica/files/geologica-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* geologica-latin-wght-normal */
+@font-face {
+  font-family: 'Geologica Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../node_modules/@fontsource-variable/geologica/files/geologica-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -454,13 +484,17 @@
   --dhq-surface-hover: #1b1e42;
   --dhq-text: #f7f8ff;
   --dhq-muted: #aeb5d3;
-  --dhq-violet: #7437f5;
+  --dhq-violet: #6b44f4;
   --dhq-blue: #4877f4;
-  --dhq-cyan: #42e5e8;
+  --dhq-cyan: #42dee9;
   --dhq-lime: #c7ff3d;
   --dhq-danger: #ff8d9b;
-  --dhq-line: rgba(116, 104, 245, 0.22);
-  --dhq-line-strong: rgba(66, 229, 232, 0.42);
+  --dhq-indigo-bright: #3737c1;
+  --dhq-indigo: #130e6d;
+  --dhq-indigo-deep: #080435;
+  --dhq-font-display: 'Geologica Variable', 'Inter Variable', system-ui, sans-serif;
+  --dhq-line: rgba(107, 92, 244, 0.22);
+  --dhq-line-strong: rgba(66, 222, 233, 0.42);
   --background: #08091f;
   --foreground: #f7f8ff;
   --card: #10112d;
@@ -473,12 +507,12 @@
   --secondary-foreground: #f7f8ff;
   --muted: #151735;
   --muted-foreground: #aeb5d3;
-  --accent: rgba(66, 229, 232, 0.1);
-  --accent-foreground: #42e5e8;
+  --accent: rgba(66, 222, 233, 0.1);
+  --accent-foreground: #42dee9;
   --destructive: #ff8d9b;
-  --border: rgba(116, 104, 245, 0.22);
-  --input: rgba(116, 104, 245, 0.28);
-  --ring: #42e5e8;
+  --border: rgba(107, 92, 244, 0.22);
+  --input: rgba(107, 92, 244, 0.28);
+  --ring: #42dee9;
   --input-background: #151735;
   --input-background-hover: #1b1e42;
   --status-running-bg: rgba(199, 255, 61, 0.08);
@@ -494,9 +528,13 @@ body {
   min-width: 320px;
   color: var(--dhq-text);
   background:
-    radial-gradient(900px 540px at 8% -10%, rgba(116, 55, 245, 0.2), transparent 66%),
-    radial-gradient(820px 520px at 96% 15%, rgba(66, 229, 232, 0.1), transparent 68%),
+    radial-gradient(900px 540px at 8% -10%, rgba(107, 68, 244, 0.2), transparent 66%),
+    radial-gradient(820px 520px at 96% 15%, rgba(66, 222, 233, 0.1), transparent 68%),
     var(--dhq-bg);
+}
+
+.dhq-display {
+  font-family: var(--dhq-font-display);
 }
 
 button:focus-visible,
@@ -510,7 +548,7 @@ input:focus-visible,
 .dhq-shell {
   min-height: 100dvh;
   background:
-    radial-gradient(720px 420px at 16% 0%, rgba(116, 55, 245, 0.1), transparent 65%),
+    radial-gradient(720px 420px at 16% 0%, rgba(107, 68, 244, 0.1), transparent 65%),
     var(--dhq-bg);
 }
 
@@ -540,6 +578,7 @@ input:focus-visible,
   min-width: 0;
   align-items: baseline;
   gap: 5px;
+  font-family: var(--dhq-font-display);
   font-size: 18px;
   letter-spacing: -0.03em;
 }
@@ -630,13 +669,13 @@ input:focus-visible,
 
 .dhq-nav-item:hover {
   color: var(--dhq-text);
-  background: rgba(116, 55, 245, 0.09);
+  background: rgba(107, 68, 244, 0.09);
 }
 
 .dhq-nav-item--active {
-  border-color: rgba(66, 229, 232, 0.14);
+  border-color: rgba(66, 222, 233, 0.14);
   color: var(--dhq-cyan);
-  background: linear-gradient(125deg, rgba(116, 55, 245, 0.16), rgba(66, 229, 232, 0.08));
+  background: linear-gradient(125deg, rgba(107, 68, 244, 0.16), rgba(66, 222, 233, 0.08));
 }
 
 .dhq-nav-item strong {
@@ -690,6 +729,7 @@ input:focus-visible,
 
 .dhq-page-title h1 {
   margin: 0;
+  font-family: var(--dhq-font-display);
   font-size: clamp(22px, 2.6vw, 29px);
   font-weight: 800;
   letter-spacing: -0.045em;
@@ -748,8 +788,8 @@ input:focus-visible,
   padding: clamp(24px, 4vw, 40px);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 85% 18%, rgba(66, 229, 232, 0.12), transparent 32%),
-    linear-gradient(135deg, rgba(116, 55, 245, 0.14), transparent 56%),
+    radial-gradient(circle at 85% 18%, rgba(66, 222, 233, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(107, 68, 244, 0.14), transparent 56%),
     var(--dhq-surface);
 }
 
@@ -813,7 +853,7 @@ input:focus-visible,
 }
 
 .dhq-primary-action {
-  border: 1px solid rgba(66, 229, 232, 0.22);
+  border: 1px solid rgba(66, 222, 233, 0.22);
   background: linear-gradient(125deg, var(--dhq-violet), var(--dhq-blue) 54%, #3bbdc7);
   box-shadow: 0 12px 32px rgba(72, 119, 244, 0.23);
 }
@@ -862,7 +902,7 @@ input:focus-visible,
   border-right: 3px solid var(--dhq-blue);
   border-radius: 0 90px 0 0;
   transform: rotate(-13deg);
-  filter: drop-shadow(0 0 7px rgba(66, 229, 232, 0.32));
+  filter: drop-shadow(0 0 7px rgba(66, 222, 233, 0.32));
 }
 
 .dhq-orbit__pulse {
@@ -952,7 +992,7 @@ input:focus-visible,
   padding: clamp(22px, 3vw, 30px);
   border-radius: 24px;
   background:
-    radial-gradient(circle at 8% 20%, rgba(116, 55, 245, 0.11), transparent 34%),
+    radial-gradient(circle at 8% 20%, rgba(107, 68, 244, 0.11), transparent 34%),
     var(--dhq-surface);
 }
 
@@ -1010,7 +1050,7 @@ input:focus-visible,
   place-items: center;
   border-radius: 11px;
   color: var(--dhq-cyan);
-  background: rgba(66, 229, 232, 0.08);
+  background: rgba(66, 222, 233, 0.08);
 }
 
 .dhq-router-config-schedule__icon svg {
@@ -1352,8 +1392,8 @@ input:focus-visible,
   background:
     linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px),
-    radial-gradient(circle at 10% 0%, rgba(116, 55, 245, 0.22), transparent 42%),
-    radial-gradient(circle at 90% 15%, rgba(66, 229, 232, 0.14), transparent 42%),
+    radial-gradient(circle at 10% 0%, rgba(107, 68, 244, 0.22), transparent 42%),
+    radial-gradient(circle at 90% 15%, rgba(66, 222, 233, 0.14), transparent 42%),
     var(--dhq-bg);
   background-size: 52px 52px, 52px 52px, auto, auto, auto;
 }
@@ -1372,6 +1412,7 @@ input:focus-visible,
 }
 
 .dhq-external-gate__card h1 {
+  font-family: var(--dhq-font-display);
   margin: -2px 0 0;
   font-size: 29px;
   font-weight: 820;
@@ -1425,8 +1466,8 @@ input:focus-visible,
   border: 1px solid rgba(199, 255, 61, 0.16);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 92% 10%, rgba(66, 229, 232, 0.13), transparent 36%),
-    linear-gradient(135deg, rgba(116, 55, 245, 0.15), transparent 56%),
+    radial-gradient(circle at 92% 10%, rgba(66, 222, 233, 0.13), transparent 36%),
+    linear-gradient(135deg, rgba(107, 68, 244, 0.15), transparent 56%),
     var(--dhq-surface);
 }
 
@@ -1532,7 +1573,7 @@ input:focus-visible,
   gap: 12px;
   align-items: center;
   padding: 11px 13px;
-  border: 1px solid rgba(116, 104, 245, 0.13);
+  border: 1px solid rgba(107, 92, 244, 0.13);
   border-radius: 12px;
   background: var(--dhq-surface-2);
 }
@@ -1594,7 +1635,7 @@ input:focus-visible,
   grid-template-columns: 58px minmax(0, 1fr);
   gap: 10px;
   padding: 5px 4px;
-  border-bottom: 1px solid rgba(116, 104, 245, 0.08);
+  border-bottom: 1px solid rgba(107, 92, 244, 0.08);
 }
 
 .dhq-external-log span {
