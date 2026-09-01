@@ -327,8 +327,22 @@ TMP_FILE="$REAL_CONFIG.new"
 BACKUP_FILE="$REAL_CONFIG.bak-$(date +%Y%m%d-%H%M%S)"
 trap 'rm -f "$TMP_FILE"' EXIT HUP INT TERM
 
-if ! curl -fsSL --connect-timeout 15 --max-time 90 -o "$TMP_FILE" "$CONFIG_URL"; then
-    log 'download failed'
+# A single attempt used to fail the whole update whenever the router lost its
+# route for a moment — most often right after the tunnel restarted, which is
+# exactly when someone reaches for "update config".
+DOWNLOAD_OK=0
+for attempt in 1 2 3; do
+    if curl -fsSL --connect-timeout 15 --max-time 90 -o "$TMP_FILE" "$CONFIG_URL"; then
+        DOWNLOAD_OK=1
+        break
+    fi
+    log "download attempt $attempt failed"
+    [ "$attempt" != 3 ] && sleep 3
+done
+if [ "$DOWNLOAD_OK" != 1 ]; then
+    log 'download failed: роутер не смог скачать конфиг за 3 попытки'
+    echo 'Не удалось скачать конфиг: роутер не смог открыть соединение с сервером.' >&2
+    echo 'Проверьте доступ в интернет с роутера и повторите попытку.' >&2
     exit 1
 fi
 
