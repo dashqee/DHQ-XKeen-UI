@@ -479,8 +479,12 @@
 .dark {
   color-scheme: dark;
   --dhq-bg: #08091f;
-  --dhq-surface: #10112d;
-  --dhq-surface-2: #151735;
+  /* Panel fills are translucent so the starfield shows through them, as in
+     the DHQ Clash app. Popovers, inputs and dialogs stay solid: they sit over
+     text and have to be readable. */
+  --dhq-panel: rgba(16, 17, 45, 0.76);
+  --dhq-surface: rgba(16, 17, 45, 0.74);
+  --dhq-surface-2: rgba(21, 23, 53, 0.82);
   --dhq-surface-hover: #1b1e42;
   --dhq-text: #f7f8ff;
   --dhq-muted: #aeb5d3;
@@ -501,7 +505,7 @@
   --dhq-line-strong: rgba(66, 222, 233, 0.42);
   --background: #08091f;
   --foreground: #f7f8ff;
-  --card: #10112d;
+  --card: var(--dhq-panel);
   --card-foreground: #f7f8ff;
   --popover: #151735;
   --popover-foreground: #f7f8ff;
@@ -674,7 +678,7 @@ input:focus-visible,
   gap: 22px;
   padding: 22px 16px;
   border-right: 1px solid var(--dhq-line);
-  background: rgba(13, 14, 40, 0.94);
+  background: rgba(13, 14, 40, 0.78);
   backdrop-filter: blur(20px);
 }
 
@@ -1572,7 +1576,7 @@ input:focus-visible,
   padding: 34px 30px;
   border: 1px solid var(--dhq-line);
   border-radius: 28px;
-  background: rgba(16, 17, 45, 0.96);
+  background: rgba(16, 17, 45, 0.84);
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.38);
   text-align: center;
 }
@@ -1799,7 +1803,7 @@ input:focus-visible,
   overflow: auto;
   border: 1px solid var(--dhq-line);
   border-radius: 16px;
-  background: #090a22;
+  background: rgba(9, 10, 34, 0.82);
 }
 
 .dhq-external-log > div:not(.dhq-external-loading) {
