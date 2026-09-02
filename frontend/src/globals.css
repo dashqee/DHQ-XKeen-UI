@@ -524,24 +524,34 @@
   --status-running-border: rgba(199, 255, 61, 0.2);
 }
 
+/* The page colour and its two soft glows live on the root: the starfield
+   below sits at z-index 0 above the root's paint and would be buried under an
+   opaque body. Every full-screen wrapper (#root, .dhq-shell, the gate) is
+   therefore transparent; cards keep their own fills. */
 html {
-  background: var(--dhq-bg);
-}
-
-body {
-  min-width: 320px;
-  color: var(--dhq-text);
   background:
     radial-gradient(900px 540px at 8% -10%, rgba(107, 68, 244, 0.2), transparent 66%),
     radial-gradient(820px 520px at 96% 15%, rgba(66, 222, 233, 0.1), transparent 68%),
     var(--dhq-bg);
 }
 
-/* The landing's backdrop: a faint blueprint grid plus a sparse starfield,
-   both fading out toward the bottom so content stays the loudest thing. */
-body::before {
+body {
+  min-width: 320px;
+  color: var(--dhq-text);
+  background: transparent;
+}
+
+/* Content above the sky. */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* The landing's blueprint grid, fading out toward the bottom so content stays
+   the loudest thing. */
+html::before {
   position: fixed;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -552,32 +562,88 @@ body::before {
   pointer-events: none;
 }
 
-/* Two viewport-wide tiles of the same stars slide to the right (-50% -> 0):
-   at -50% the second tile sits where the first started, so the loop has no
-   seam. The same drift the DHQ Clash app paints behind its dashboard. */
+/* The same night sky the DHQ Clash app and web app paint: faint stars plus a
+   brighter twinkling layer, both sliding to the right. Each layer is two
+   viewport-wide tiles of the same stars (200% wide, background-size 50%)
+   translated from -50% to 0: at -50% the second tile sits exactly where the
+   first started, so the loop has no seam. Copied from webapp/src/index.css in
+   dhqclash-private; keep the two in step. */
+body::before,
 body::after {
   position: fixed;
-  z-index: -1;
-  inset: 0 auto 0 0;
+  z-index: 0;
+  inset: -6% auto -6% 0;
   width: 200%;
-  background-image:
-    radial-gradient(circle at 21% 16%, rgba(247, 248, 255, 0.75) 0 1px, transparent 2.4px),
-    radial-gradient(circle at 67% 7%, rgba(199, 255, 61, 0.8) 0 1.2px, transparent 2.6px),
-    radial-gradient(circle at 84% 29%, rgba(66, 222, 233, 0.7) 0 1.1px, transparent 2.5px),
-    radial-gradient(circle at 38% 44%, rgba(247, 248, 255, 0.5) 0 1px, transparent 2.2px),
-    radial-gradient(circle at 9% 62%, rgba(66, 222, 233, 0.55) 0 1px, transparent 2.4px),
-    radial-gradient(circle at 55% 23%, rgba(247, 248, 255, 0.4) 0 0.9px, transparent 2px),
-    radial-gradient(circle at 93% 56%, rgba(199, 255, 61, 0.5) 0 1px, transparent 2.3px),
-    radial-gradient(circle at 45% 82%, rgba(247, 248, 255, 0.35) 0 0.9px, transparent 2px);
   background-repeat: repeat-x;
   background-size: 50% 100%;
-  mask-image: linear-gradient(to bottom, #000, transparent 85%);
-  animation:
-    dhq-star-drift 70s linear infinite,
-    dhq-star-twinkle 5.2s ease-in-out infinite;
+  mask-image: linear-gradient(to bottom, #000, rgba(0, 0, 0, 0.45) 78%, transparent);
   content: '';
   pointer-events: none;
   will-change: transform;
+}
+
+body::before {
+  background-image:
+  radial-gradient(circle at 11% 12%, rgba(247, 248, 255, 0.8) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 21% 4%, rgba(66, 222, 233, 0.85) 0 1.1px, transparent 2.0px),
+  radial-gradient(circle at 41% 15%, rgba(247, 248, 255, 0.6) 0 1.0px, transparent 1.9px),
+  radial-gradient(circle at 52% 3%, rgba(107, 68, 244, 0.9) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 71% 8%, rgba(247, 248, 255, 0.7) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 93% 9%, rgba(72, 119, 244, 0.8) 0 1.1px, transparent 2.0px),
+  radial-gradient(circle at 8% 22%, rgba(247, 248, 255, 0.8) 0 1.3px, transparent 2.2px),
+  radial-gradient(circle at 28% 30%, rgba(66, 222, 233, 0.85) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 42% 28%, rgba(247, 248, 255, 0.6) 0 1.5px, transparent 2.4px),
+  radial-gradient(circle at 64% 32%, rgba(107, 68, 244, 0.9) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 78% 25%, rgba(247, 248, 255, 0.7) 0 1.3px, transparent 2.2px),
+  radial-gradient(circle at 86% 23%, rgba(72, 119, 244, 0.8) 0 1.1px, transparent 2.0px),
+  radial-gradient(circle at 4% 45%, rgba(247, 248, 255, 0.8) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 23% 44%, rgba(66, 222, 233, 0.85) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 40% 45%, rgba(247, 248, 255, 0.6) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 54% 53%, rgba(107, 68, 244, 0.9) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 78% 55%, rgba(247, 248, 255, 0.7) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 86% 55%, rgba(72, 119, 244, 0.8) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 8% 71%, rgba(247, 248, 255, 0.8) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 29% 76%, rgba(66, 222, 233, 0.85) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 36% 75%, rgba(247, 248, 255, 0.6) 0 1.0px, transparent 1.9px),
+  radial-gradient(circle at 55% 66%, rgba(107, 68, 244, 0.9) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 71% 68%, rgba(247, 248, 255, 0.7) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 97% 76%, rgba(72, 119, 244, 0.8) 0 1.1px, transparent 2.0px),
+  radial-gradient(circle at 5% 88%, rgba(247, 248, 255, 0.8) 0 1.5px, transparent 2.4px),
+  radial-gradient(circle at 21% 93%, rgba(66, 222, 233, 0.85) 0 1.1px, transparent 2.0px),
+  radial-gradient(circle at 44% 88%, rgba(247, 248, 255, 0.6) 0 1.2px, transparent 2.1px),
+  radial-gradient(circle at 54% 88%, rgba(107, 68, 244, 0.9) 0 1.5px, transparent 2.4px),
+  radial-gradient(circle at 74% 84%, rgba(247, 248, 255, 0.7) 0 1.4px, transparent 2.3px),
+  radial-gradient(circle at 88% 90%, rgba(72, 119, 244, 0.8) 0 1.1px, transparent 2.0px);
+  /* The faint layer is "further away": slower than the bright one. */
+  animation: dhq-star-drift 96s linear infinite;
+}
+
+body::after {
+  background-image:
+  radial-gradient(circle at 3% 19%, rgb(247, 248, 255) 0 1.9px, rgba(247, 248, 255, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 22% 4%, rgb(66, 222, 233) 0 1.7px, rgba(66, 222, 233, 0.2) 2.4px, transparent 3.7px),
+  radial-gradient(circle at 36% 21%, rgb(199, 255, 61) 0 1.7px, rgba(199, 255, 61, 0.2) 2.4px, transparent 3.7px),
+  radial-gradient(circle at 54% 3%, rgb(247, 248, 255) 0 1.7px, rgba(247, 248, 255, 0.2) 2.4px, transparent 3.7px),
+  radial-gradient(circle at 80% 2%, rgb(107, 68, 244) 0 1.9px, rgba(107, 68, 244, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 93% 11%, rgb(247, 248, 255) 0 1.9px, rgba(247, 248, 255, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 13% 43%, rgb(66, 222, 233) 0 1.9px, rgba(66, 222, 233, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 23% 47%, rgb(199, 255, 61) 0 2.2px, rgba(199, 255, 61, 0.2) 2.9px, transparent 4.2px),
+  radial-gradient(circle at 45% 33%, rgb(247, 248, 255) 0 1.9px, rgba(247, 248, 255, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 63% 33%, rgb(107, 68, 244) 0 2.2px, rgba(107, 68, 244, 0.2) 2.9px, transparent 4.2px),
+  radial-gradient(circle at 81% 34%, rgb(247, 248, 255) 0 1.8px, rgba(247, 248, 255, 0.2) 2.5px, transparent 3.8px),
+  radial-gradient(circle at 91% 46%, rgb(66, 222, 233) 0 2.0px, rgba(66, 222, 233, 0.2) 2.7px, transparent 4.0px),
+  radial-gradient(circle at 13% 65%, rgb(199, 255, 61) 0 1.8px, rgba(199, 255, 61, 0.2) 2.5px, transparent 3.8px),
+  radial-gradient(circle at 22% 54%, rgb(247, 248, 255) 0 2.1px, rgba(247, 248, 255, 0.2) 2.8px, transparent 4.1px),
+  radial-gradient(circle at 41% 71%, rgb(107, 68, 244) 0 2.1px, rgba(107, 68, 244, 0.2) 2.8px, transparent 4.1px),
+  radial-gradient(circle at 56% 57%, rgb(247, 248, 255) 0 2.2px, rgba(247, 248, 255, 0.2) 2.9px, transparent 4.2px),
+  radial-gradient(circle at 78% 64%, rgb(66, 222, 233) 0 1.7px, rgba(66, 222, 233, 0.2) 2.4px, transparent 3.7px),
+  radial-gradient(circle at 97% 63%, rgb(199, 255, 61) 0 1.9px, rgba(199, 255, 61, 0.2) 2.6px, transparent 3.9px),
+  radial-gradient(circle at 11% 93%, rgb(247, 248, 255) 0 2.2px, rgba(247, 248, 255, 0.2) 2.9px, transparent 4.2px),
+  radial-gradient(circle at 24% 80%, rgb(107, 68, 244) 0 2.1px, rgba(107, 68, 244, 0.2) 2.8px, transparent 4.1px);
+  filter: drop-shadow(0 0 5px rgba(66, 222, 233, 0.55));
+  animation:
+    dhq-star-drift 60s linear infinite,
+    dhq-star-twinkle 3.2s ease-in-out infinite;
 }
 
 .dhq-display {
@@ -594,9 +660,8 @@ input:focus-visible,
 
 .dhq-shell {
   min-height: 100dvh;
-  background:
-    radial-gradient(720px 420px at 16% 0%, rgba(107, 68, 244, 0.1), transparent 65%),
-    var(--dhq-bg);
+  /* A glow only — the page colour is on html, and the stars show through. */
+  background: radial-gradient(720px 420px at 16% 0%, rgba(107, 68, 244, 0.1), transparent 65%);
 }
 
 .dhq-sidebar {
@@ -1446,10 +1511,13 @@ input:focus-visible,
 
 @keyframes dhq-star-twinkle {
   0%, 100% {
-    opacity: 0.65;
+    opacity: 0.45;
   }
-  50% {
+  48% {
     opacity: 1;
+  }
+  72% {
+    opacity: 0.7;
   }
 }
 
@@ -1471,13 +1539,11 @@ input:focus-visible,
   place-items: center;
   overflow: hidden;
   padding: 24px;
+  /* Glows only: the grid and the page colour come from html, so the
+     starfield is not buried under the gate. */
   background:
-    linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px),
     radial-gradient(circle at 10% 0%, rgba(107, 68, 244, 0.22), transparent 42%),
-    radial-gradient(circle at 90% 15%, rgba(66, 222, 233, 0.14), transparent 42%),
-    var(--dhq-bg);
-  background-size: 52px 52px, 52px 52px, auto, auto, auto;
+    radial-gradient(circle at 90% 15%, rgba(66, 222, 233, 0.14), transparent 42%);
 }
 
 /* The landing hero's blurred aurora, sitting behind the gate card. */
