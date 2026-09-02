@@ -552,10 +552,14 @@ body::before {
   pointer-events: none;
 }
 
+/* Two viewport-wide tiles of the same stars slide to the right (-50% -> 0):
+   at -50% the second tile sits where the first started, so the loop has no
+   seam. The same drift the DHQ Clash app paints behind its dashboard. */
 body::after {
   position: fixed;
   z-index: -1;
-  inset: 0;
+  inset: 0 auto 0 0;
+  width: 200%;
   background-image:
     radial-gradient(circle at 21% 16%, rgba(247, 248, 255, 0.75) 0 1px, transparent 2.4px),
     radial-gradient(circle at 67% 7%, rgba(199, 255, 61, 0.8) 0 1.2px, transparent 2.6px),
@@ -565,10 +569,15 @@ body::after {
     radial-gradient(circle at 55% 23%, rgba(247, 248, 255, 0.4) 0 0.9px, transparent 2px),
     radial-gradient(circle at 93% 56%, rgba(199, 255, 61, 0.5) 0 1px, transparent 2.3px),
     radial-gradient(circle at 45% 82%, rgba(247, 248, 255, 0.35) 0 0.9px, transparent 2px);
+  background-repeat: repeat-x;
+  background-size: 50% 100%;
   mask-image: linear-gradient(to bottom, #000, transparent 85%);
-  animation: dhq-star-twinkle 5.2s ease-in-out infinite;
+  animation:
+    dhq-star-drift 70s linear infinite,
+    dhq-star-twinkle 5.2s ease-in-out infinite;
   content: '';
   pointer-events: none;
+  will-change: transform;
 }
 
 .dhq-display {
@@ -1423,6 +1432,15 @@ input:focus-visible,
 @keyframes dhq-gradient-sweep {
   to {
     background-position: 100% 50%;
+  }
+}
+
+@keyframes dhq-star-drift {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
   }
 }
 
